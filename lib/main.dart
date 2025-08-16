@@ -56,6 +56,7 @@ void main() async {
     await Firebase.initializeApp();
   }
 
+
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('YOUR_RECAPTCHA_KEY'), // For web
     androidProvider: AndroidProvider
