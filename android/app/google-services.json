@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "868279158213",
+    "project_id": "testify-learn-d58e0",
+    "storage_bucket": "testify-learn-d58e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:868279158213:android:ccba15957189ead168f7ac",
+        "android_client_info": {
+          "package_name": "com.example.testify_learn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz2gFQv8Mr3buEoMu9NfjpbHsWR2tGJ70"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:868279158213:android:aa97e26254ad0e4b68f7ac",
+        "android_client_info": {
+          "package_name": "com.example.testify_learn_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz2gFQv8Mr3buEoMu9NfjpbHsWR2tGJ70"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
