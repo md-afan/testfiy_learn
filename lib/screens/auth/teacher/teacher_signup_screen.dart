@@ -1,158 +1,98 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-// routes name
+import 'package:provider/provider.dart';
 import '../../../constants/app_routes.dart';
 import '../../../utils/helpers.dart';
-import '../../../utils/responsive.dart';
 import '../../../widgets/picker_images.dart';
-import '../../../utils/cloudinary.dart';
-import '../../../services/firebase_notification.dart';
+import '../../../providers/auth/teacher_signup_provider.dart';
 
-class TeacherSignup extends StatefulWidget {
+class TeacherSignup extends StatelessWidget {
   const TeacherSignup({super.key});
 
   @override
-  State<TeacherSignup> createState() => _TeacherSignupState();
-}
-
-class _TeacherSignupState extends State<TeacherSignup> {
-  final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-  String? teacherImageUrl;
-  bool isUploadingTeacherImage = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace(AppRoutes.login);
-      }),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: _form(),
-      ),
+    return Consumer<TeacherSignupProvider>(
+      builder: (context, provider, _) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
+            context.replace(AppRoutes.login);
+          }),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Form(
+              key: provider.formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Create Teacher Account",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Fill in your personal details",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  _teacherDetails(context, provider),
+                  const SizedBox(height: 40),
+                  provider.isLoading
+                      ? const CircularProgressIndicator() // only vertically centered by Row
+                      : UiHelpers.customButton(
+                          context,
+                          "Submit",
+                          () async {
+                            // ✅ First validate form
+                            if (provider.formKey.currentState!.validate()) {
+                              // ✅ Validate teacher image
+                              if (provider.teacherImageUrl == null) {
+                                UiHelpers.showSnackbar(
+                                    context, "Please upload a teacher image");
+                                return;
+                              }
+
+                              // ✅ Validate coaching image
+
+                              // ✅ Call signup
+                              final error = await provider.signup(context);
+                              if (error != null) {
+                                UiHelpers.showSnackbar(context, error);
+                              } else {
+                                UiHelpers.showSnackbar(
+                                  context,
+                                  "Signup successful. Please verify your email.",
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.secondary,
+                                );
+                                context.go(AppRoutes.emailVerification);
+                              }
+                            } else {
+                              UiHelpers.showSnackbar(
+                                context,
+                                "Please fix all errors before submitting.",
+                              );
+                            }
+                          },
+                        ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _form() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Create Teacher Account",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Fill in your personal details",
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          _teacherDetails(),
-          const SizedBox(height: 40),
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : UiHelpers.customButton(context, "Submit", () async {
-                  if (_formKey.currentState!.validate()) {
-                    if (teacherImageUrl != null) {
-                      UiHelpers.showSnackbar(
-                        context,
-                        "Please upload your profile image.",
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    final String email = emailController.text.trim();
-                    final String password = passwordController.text.trim();
-                    final String name = fullNameController.text.trim();
-                    final String phone = phoneController.text.trim();
-
-                    try {
-                      final credential = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
-                              email: email, password: password);
-
-                      final uid = credential.user!.uid;
-
-                      await credential.user!.sendEmailVerification();
-
-                      await FirebaseFirestore.instance
-                          .collection("teachers")
-                          .doc(uid)
-                          .set({
-                        "uid": uid,
-                        "email": email,
-                        "fullName": name,
-                        "phone": phone,
-                        "teacherImageUrl": teacherImageUrl ??
-                            "https://res.cloudinary.com/dujsdlqm0/image/upload/v1753368261/testify_learn/images/xbcbotja5wmyo8zwqrjh.jpg",
-                        "isApproved": false,
-                        'isAdmin': false,
-                        "createdAt": Timestamp.now(),
-                      });
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      UiHelpers.showSnackbar(
-                        context,
-                        "Signup successful. Please verify your email.",
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
-                      );
-
-                      await FirebaseNotification.saveTokenToFirestore(
-                          uid, false);
-
-                      context.go(AppRoutes.emailVerification);
-                    } on FirebaseAuthException catch (error) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      UiHelpers.showSnackbar(
-                          context, "Signup failed: ${error.message}");
-                    } catch (error) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      UiHelpers.showSnackbar(
-                          context, "Unexpected error: $error");
-                    }
-                  }
-                }),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _teacherDetails() {
+  Widget _teacherDetails(BuildContext context, TeacherSignupProvider provider) {
     return Column(
       children: [
         UiHelpers.customTextField(
           context,
           hintText: "Full Name",
-          controller: fullNameController,
-          prefixIcon: Icon(Icons.person),
+          controller: provider.fullNameController,
+          prefixIcon: const Icon(Icons.person),
           validator: (val) => val == null || val.trim().isEmpty
               ? 'Full Name is required'
               : null,
@@ -161,8 +101,8 @@ class _TeacherSignupState extends State<TeacherSignup> {
         UiHelpers.customTextField(
           context,
           hintText: "Email Address",
-          controller: emailController,
-          prefixIcon: Icon(Icons.email),
+          controller: provider.emailController,
+          prefixIcon: const Icon(Icons.email),
           keyboardType: TextInputType.emailAddress,
           validator: (val) =>
               val == null || !val.contains('@') ? 'Enter a valid email' : null,
@@ -171,8 +111,8 @@ class _TeacherSignupState extends State<TeacherSignup> {
         UiHelpers.customTextField(
           context,
           hintText: "Phone Number",
-          controller: phoneController,
-          prefixIcon: Icon(Icons.phone),
+          controller: provider.phoneController,
+          prefixIcon: const Icon(Icons.phone),
           keyboardType: TextInputType.phone,
           validator: (val) => val == null || val.length != 10
               ? 'Enter a valid 10-digit phone number'
@@ -182,18 +122,14 @@ class _TeacherSignupState extends State<TeacherSignup> {
         UiHelpers.customTextField(
           context,
           hintText: "Password",
-          controller: passwordController,
+          controller: provider.passwordController,
           prefixIcon: const Icon(Icons.lock),
-          obscureText: _obscurePassword,
+          obscureText: provider.obscurePassword,
           suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-            ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
+            icon: Icon(provider.obscurePassword
+                ? Icons.visibility_off
+                : Icons.visibility),
+            onPressed: provider.togglePassword,
           ),
           validator: (val) => val != null && val.length < 6
               ? 'Password must be at least 6 characters'
@@ -203,24 +139,9 @@ class _TeacherSignupState extends State<TeacherSignup> {
         UiHelpers.sectionTitle("Upload Image"),
         const SizedBox(height: 10),
         ImagePickerWidget(
-          onImageSelected: (file) async {
-            setState(() {
-              isUploadingTeacherImage = true;
-            });
-            final url = await uploadImageToCloudinary(
-              file,
-              folderName: "testify_learn/images",
-            );
-            log(url.toString());
-            if (url != null) {
-              setState(() {
-                teacherImageUrl = url;
-                isUploadingTeacherImage = false;
-              });
-            }
-          },
+          onImageSelected: provider.pickTeacherImage,
           title: "Upload teacher image",
-          isLoading: isUploadingTeacherImage,
+          isLoading: provider.isUploadingTeacherImage,
         ),
       ],
     );

@@ -26,6 +26,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   String? uid;
   String? coachingCode;
   bool isUploadingImage = false;
+  bool isUploadingCoverImage = false;
   final ImagePicker picker = ImagePicker();
 
   @override
@@ -72,7 +73,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final XFile? picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
 
-    setState(() => isUploadingImage = true);
+    setState(() =>
+        isProfile ? isUploadingImage = true : isUploadingCoverImage = true);
 
     final file = File(picked.path);
     final url =
@@ -87,7 +89,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       }
     }
 
-    setState(() => isUploadingImage = false);
+    setState(() =>
+        isProfile ? isUploadingImage = false : isUploadingCoverImage = false);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -140,12 +143,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (uid == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Consumer<StudentProfileProvider>(
       builder: (__, provider, _) {
         final student = provider.student;
@@ -166,6 +163,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         'https://mohdbinsufiyan.vercel.app/assets/media/mypic.jpg',
                     onProfileImageTap: () => _showImagePickerBottomSheet(true),
                     isUploadingImage: isUploadingImage,
+                    onCoverImageTap: () => _showImagePickerBottomSheet(false),
+                    isUploadingCoverImages: isUploadingCoverImage,
                     actions: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
@@ -256,8 +255,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                     }
                                     if (snapshot.hasError) {
                                       return Center(
-                                          child: Text(
-                                              'Error: ${snapshot.error}'));
+                                          child:
+                                              Text('Error: ${snapshot.error}'));
                                     }
                                     if (!snapshot.hasData ||
                                         snapshot.data!.isEmpty) {
@@ -284,16 +283,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                                     );
                                   },
                                 ),
-                              Center(
-                                child: TextButton.icon(
-                                  icon: const Icon(Icons.logout,
-                                      color: Colors.redAccent),
-                                  label: const Text("Logout",
-                                      style:
-                                          TextStyle(color: Colors.redAccent)),
-                                  onPressed: () => _logout(context),
-                                ),
-                              ),
+                              
                             ],
                           ),
                         ),

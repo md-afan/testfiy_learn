@@ -13,6 +13,8 @@ import 'widgets/studnet_list_screen.dart';
 import 'widgets/all_activity_list.dart';
 import '../../providers/teachers/teacher_dashboard_proivder.dart';
 import "package:go_router/go_router.dart";
+import '../../widgets/global_shimmer_screen.dart';
+import '../../widgets/text_card.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -69,20 +71,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: provider.refreshDashboard,
-        child: provider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ResponsiveLayout(
-                mobile: _dashboardBody(context, provider),
-                tablet: _dashboardBody(context, provider),
-                desktop: _dashboardBody(context, provider),
-                largeDesttop: Row(
-                  children: [
-                    Expanded(flex: 2, child: _dashboardBody(context, provider)),
-                    const VerticalDivider(width: 1),
-                    const Expanded(child: Center(child: Text("Extra Panel"))),
-                  ],
-                ),
-              ),
+        child: ResponsiveLayout(
+          mobile: _dashboardBody(context, provider),
+          tablet: _dashboardBody(context, provider),
+          desktop: _dashboardBody(context, provider),
+          largeDesttop: Row(
+            children: [
+              Expanded(flex: 2, child: _dashboardBody(context, provider)),
+              const VerticalDivider(width: 1),
+              const Expanded(child: Center(child: Text("Extra Panel"))),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -101,52 +101,59 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Welcome back, ${provider.name ?? 'Loading...'}!",
-                          style: Theme.of(context).textTheme.displaySmall),
-                      const SizedBox(height: 4),
-                      Text(
-                          "Coaching Name: ${provider.coachingName ?? 'Loading...'}",
-                          style: Theme.of(context).textTheme.bodyMedium),
-                      const SizedBox(height: 4),
-                      Text("Coaching code: ${provider.code ?? 'Loading...'}",
-                          style: Theme.of(context).textTheme.bodyMedium),
-                    ],
-                  ),
+                  child: provider.isLoading
+                      ? _buildWelcomeSectionShimmer(context)
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                "Welcome back, ${provider.name ?? 'Loading...'}!",
+                                style:
+                                    Theme.of(context).textTheme.displaySmall),
+                            const SizedBox(height: 4),
+                            Text(
+                                "Coaching Name: ${provider.coachingName ?? 'Loading...'}",
+                                style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 4),
+                            Text(
+                                "Coaching code: ${provider.code ?? 'Loading...'}",
+                                style: Theme.of(context).textTheme.bodyMedium),
+                          ],
+                        ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    StatBox(
-                      count: provider.totalStudents.toString(),
-                      label: "Students",
-                      color: AppColors.primaryComman,
-                      icon: Icons.group,
-                    ),
-                    StatBox(
-                      count: provider.totalTests.toString(),
-                      label: "Tests",
-                      color: AppColors.tertiaryComman,
-                      icon: Icons.assignment,
-                    ),
-                    StatBox(
-                      count: "32030",
-                      label: "Earnings",
-                      color: AppColors.secondaryComman,
-                      icon: Icons.account_balance_wallet_outlined,
-                    ),
-                  ],
-                ),
+                provider.isLoading
+                    ? StatBoxShimmer(count: 3)
+                    : Row(
+                        children: [
+                          StatBox(
+                            count: provider.totalStudents.toString(),
+                            label: "Students",
+                            color: AppColors.primaryComman,
+                            icon: Icons.group,
+                          ),
+                          StatBox(
+                            count: provider.totalTests.toString(),
+                            label: "Tests",
+                            color: AppColors.tertiaryComman,
+                            icon: Icons.assignment,
+                          ),
+                          StatBox(
+                            count: "32030",
+                            label: "Earnings",
+                            color: AppColors.secondaryComman,
+                            icon: Icons.account_balance_wallet_outlined,
+                          ),
+                        ],
+                      ),
                 const SizedBox(height: 16),
-                UiHelpers.customButton(context, "+ Create new test", () {
-                  context.go(AppRoutes.createNewTests);
-                }),
+                GlobalShimmerScreen(
+                  isLoading: provider.isLoading,
+                  child:
+                      UiHelpers.customButton(context, "+ Create new test", () {
+                    context.go(AppRoutes.createNewTests);
+                  }),
+                ),
                 const SizedBox(height: 16),
               ],
             ),
@@ -156,31 +163,35 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           child: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TabButton(
-                    label: 'All',
-                    index: 0,
-                    currentIndex: _tabIndex,
-                    onTap: _setTab),
-                TabButton(
-                    label: 'Students',
-                    index: 1,
-                    currentIndex: _tabIndex,
-                    onTap: _setTab),
-                TabButton(
-                    label: 'Tests',
-                    index: 2,
-                    currentIndex: _tabIndex,
-                    onTap: _setTab),
-                TabButton(
-                    label: 'Earnings',
-                    index: 3,
-                    currentIndex: _tabIndex,
-                    onTap: _setTab),
-              ],
-            ),
+            child: provider.isLoading
+                ? TabButtonShimmer(
+                    count: 4,
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TabButton(
+                          label: 'All',
+                          index: 0,
+                          currentIndex: _tabIndex,
+                          onTap: _setTab),
+                      TabButton(
+                          label: 'Students',
+                          index: 1,
+                          currentIndex: _tabIndex,
+                          onTap: _setTab),
+                      TabButton(
+                          label: 'Tests',
+                          index: 2,
+                          currentIndex: _tabIndex,
+                          onTap: _setTab),
+                      TabButton(
+                          label: 'Earnings',
+                          index: 3,
+                          currentIndex: _tabIndex,
+                          onTap: _setTab),
+                    ],
+                  ),
           ),
         ),
         SliverToBoxAdapter(
@@ -189,16 +200,19 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _tabIndex == 0
-                      ? 'Recent Activity'
-                      : _tabIndex == 1
-                          ? 'Upcoming Tests'
-                          : 'Completed Tests',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                GlobalShimmerScreen(
+                  isLoading: provider.isLoading,
+                  child: Text(
+                    _tabIndex == 0
+                        ? 'Recent Activity'
+                        : _tabIndex == 1
+                            ? 'Upcoming Tests'
+                            : 'Completed Tests',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _getTabContent(provider),
@@ -212,12 +226,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   Widget _getTabContent(TeacherDashboardProvider provider) {
     if (provider.uid == null || provider.code == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: TestCardShimmer(count: 5));
     }
     switch (_tabIndex) {
       case 0:
         return AllActivityList(
-            uid: provider.uid!, coachingCode: provider.code!);
+          uid: provider.uid!,
+          coachingCode: provider.code!,
+        );
       case 1:
         return StudentsListScreen(coachingCode: provider.code!);
       case 2:
@@ -227,5 +243,78 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+// shimmer widget for _buildWelcomeSection
+  Widget _buildWelcomeSectionShimmer(BuildContext context) {
+    final theme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Welcome Text shimmer
+          GlobalShimmerScreen(
+            isLoading: true,
+            child: Container(
+              height: 24,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                  color: theme.surface, borderRadius: BorderRadius.circular(4)),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Coaching row shimmer
+          Row(
+            children: [
+              // Image shimmer
+              GlobalShimmerScreen(
+                isLoading: true,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: theme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Text shimmer
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GlobalShimmerScreen(
+                      isLoading: true,
+                      child: Container(
+                        height: 16,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            color: theme.surface,
+                            borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GlobalShimmerScreen(
+                      isLoading: true,
+                      child: Container(
+                        height: 14,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            color: theme.surface,
+                            borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

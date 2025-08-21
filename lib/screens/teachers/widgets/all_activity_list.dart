@@ -38,7 +38,9 @@ class _AllActivityListState extends State<AllActivityList> {
     return Consumer<AllActivityProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return TestCardShimmer(
+            count: 10,
+          );
         }
 
         if (provider.error != null) {

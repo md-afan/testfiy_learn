@@ -15,6 +15,7 @@
 #include <firebase_storage/firebase_storage_plugin_c_api.h>
 #include <flutter_screen_capture/flutter_screen_capture_plugin_c_api.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
+#include <permission_handler_windows/permission_handler_windows_plugin.h>
 #include <printing/printing_plugin.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 
@@ -37,6 +38,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FlutterScreenCapturePluginCApi"));
   FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
+  PermissionHandlerWindowsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("PermissionHandlerWindowsPlugin"));
   PrintingPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PrintingPlugin"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(

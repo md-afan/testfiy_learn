@@ -1,318 +1,199 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../utils/secure_locally_storage.dart';
-
-// routes name
+import 'package:provider/provider.dart';
 import '../../../constants/app_routes.dart';
 import '../../../utils/helpers.dart';
 import '../../../utils/responsive.dart';
 import '../../../widgets/picker_images.dart';
-import '../../../utils/cloudinary.dart';
-import '../../../services/firebase_notification.dart';
+import '../../../providers/auth/organization_creation_provider.dart';
 
-// generate unique code
-import '../../../services/unique_code.dart';
-
-class OrganizationSignupScreen extends StatefulWidget {
+class OrganizationSignupScreen extends StatelessWidget {
   const OrganizationSignupScreen({super.key});
 
   @override
-  State<OrganizationSignupScreen> createState() => _OrganizationSignupState();
-}
-
-class _OrganizationSignupState extends State<OrganizationSignupScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  // Teacher Details
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-
-  // Coaching Details
-  final TextEditingController coachingNameController = TextEditingController();
-  final TextEditingController coachingAddressController =
-      TextEditingController();
-  final TextEditingController subjectsController = TextEditingController();
-  final TextEditingController contactController = TextEditingController();
-
-  // KYC Details
-  final TextEditingController aadharController = TextEditingController();
-  final TextEditingController panController = TextEditingController();
-
-  bool _obscurePassword = true;
-  bool _isLoading = false;
-  String? teacherImageUrl;
-  String? coachingImageUrl;
-
-  bool isUploadingTeacherImage = false;
-  bool isUploadingCoachingImage = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace(AppRoutes.login);
-      }),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: _form(),
-      ),
-    );
-  }
-
-  Widget _form() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Create Teacher Account",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Fill in your personal and coaching details",
-            style: TextStyle(color: Colors.grey),
-          ),
-          ResponsiveLayout(
-            mobile: Column(
-              children: [
-                const SizedBox(height: 24),
-                UiHelpers.sectionTitle("Teacher Details"),
-                const SizedBox(height: 12),
-                _teacherDetails(),
-                const SizedBox(height: 32),
-                UiHelpers.sectionTitle("Coaching Details"),
-                const SizedBox(height: 12),
-                _coachingDetails(),
-              ],
-            ),
-            tablet: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      UiHelpers.sectionTitle("Teacher Details"),
-                      const SizedBox(height: 12),
-                      _teacherDetails(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      UiHelpers.sectionTitle("Coaching Details"),
-                      const SizedBox(height: 12),
-                      _coachingDetails(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            desktop: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
+    return ChangeNotifierProvider(
+      create: (_) => OrganizationSignupProvider(),
+      child: Consumer<OrganizationSignupProvider>(
+        builder: (context, provider, _) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
+              context.replace(AppRoutes.login);
+            }),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Form(
+                key: provider.formKey,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const Text("Create Teacher Account",
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text("Fill in your personal and coaching details",
+                        style: TextStyle(color: Colors.grey)),
+
+                    const SizedBox(height: 20),
+
+                    /// 🔑 Responsive Layout
+                    ResponsiveLayout(
+                      mobile: Column(
                         children: [
                           UiHelpers.sectionTitle("Teacher Details"),
-                          const SizedBox(height: 12),
-                          _teacherDetails(),
+                          _teacherDetails(context, provider),
                           const SizedBox(height: 32),
+                          UiHelpers.sectionTitle("Coaching Details"),
+                          _coachingDetails(context, provider),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
+                      tablet: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          UiHelpers.sectionTitle("Coaching Details"),
-                          const SizedBox(height: 12),
-                          _coachingDetails(),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Teacher Details"),
+                                _teacherDetails(context, provider),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 32),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Coaching Details"),
+                                _coachingDetails(context, provider),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
+                      desktop: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Teacher Details"),
+                                _teacherDetails(context, provider),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 48),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Coaching Details"),
+                                _coachingDetails(context, provider),
+                              ],
+                            ),
+                          ),
+
+                          
+                        ],
+                        
+                      ),
+                      largeDesttop: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Teacher Details"),
+                                _teacherDetails(context, provider),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 48),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                UiHelpers.sectionTitle("Coaching Details"),
+                                _coachingDetails(context, provider),
+                              ],
+                            ),
+                          ),
+
+                          
+                        ],
+                        
+                      ),
                     ),
+
+                    const SizedBox(height: 40),
+
+                    provider.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : UiHelpers.customButton(context, "Submit", () async {
+                            if (provider.formKey.currentState!.validate()) {
+                              if (provider.teacherImageUrl == null) {
+                                UiHelpers.showSnackbar(
+                                    context, "Please upload a teacher image");
+                                return;
+                              }
+                              if (provider.coachingImageUrl == null) {
+                                UiHelpers.showSnackbar(
+                                    context, "Please upload a coaching image");
+                                return;
+                              }
+
+                              final error = await provider.signup(context);
+                              if (error != null) {
+                                UiHelpers.showSnackbar(context, error);
+                              } else {
+                                UiHelpers.showSnackbar(
+                                  context,
+                                  "Signup successful. Please verify your email.",
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.secondary,
+                                );
+                                context.go(AppRoutes.emailVerification);
+                              }
+                            } else {
+                              UiHelpers.showSnackbar(context,
+                                  "Please fix errors before submitting.");
+                            }
+                          }),
                   ],
                 ),
               ),
             ),
-            largeDesttop: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          UiHelpers.sectionTitle("Teacher Details"),
-                          const SizedBox(height: 12),
-                          _teacherDetails(),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          UiHelpers.sectionTitle("Coaching Details"),
-                          const SizedBox(height: 12),
-                          _coachingDetails(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 40),
-          // Inside the Submit button
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : UiHelpers.customButton(context, "Submit", () async {
-                  // Inside onPressed of Submit button
-                  if (_formKey.currentState!.validate()) {
-                    if (teacherImageUrl == null || coachingImageUrl == null) {
-                      UiHelpers.showSnackbar(
-                        context,
-                        "Please upload both images.",
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      _isLoading = true;
-                    });
-
-                    final String email = emailController.text.trim();
-                    final String password = passwordController.text.trim();
-                    final String name = fullNameController.text.trim();
-                    final String phone = phoneController.text.trim();
-                    final String coachingName =
-                        coachingNameController.text.trim();
-                    final String coachingAddress =
-                        coachingAddressController.text.trim();
-
-                   
-
-                    try {
-                      final credential = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
-                              email: email, password: password);
-
-                      final uid = credential.user!.uid;
-
-                      await credential.user!.sendEmailVerification();
-
-                      final String coachingCode =
-                          await generateUniqueCoachingCode(
-                        coachingName: coachingName,
-                      );
-
-                      await FirebaseFirestore.instance
-                          .collection("teachers")
-                          .doc(uid)
-                          .set({
-                        "uid": uid,
-                        "email": email,
-                        "fullName": name,
-                        "phone": phone,
-                        "teacherImageUrl": teacherImageUrl,
-                        "isApproved": false,
-                        'isAdmin': true,
-                        "createdAt": Timestamp.now(),
-                        "coachingCode": coachingCode,
-                      });
-
-                      await FirebaseFirestore.instance
-                          .collection("coachingCodes")
-                          .doc(coachingCode)
-                          .set({
-                        "name": coachingName,
-                        "code": coachingCode,
-                        "createdBy": uid,
-                        "logoUrl": coachingImageUrl,
-                        "active": true,
-                        'contact': phone,
-                        "address": coachingAddress,
-                        "createdAt": Timestamp.now(),
-                      });
-
-                      setState(() {
-                        _isLoading = false;
-                      });
-
-                      UiHelpers.showSnackbar(
-                        context,
-                        "Signup successful. Please verify your email.",
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
-                      );
-
-                      await LocalStorage.saveLocalStorage("uid", uid);
-                      await FirebaseNotification.saveTokenToFirestore(
-                          uid, true);
-
-                      context.go(AppRoutes.emailVerification);
-                    } on FirebaseAuthException catch (error) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      UiHelpers.showSnackbar(
-                          context, "Signup failed: ${error.message}");
-                    } catch (error) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                      UiHelpers.showSnackbar(
-                          context, "Unexpected error: $error");
-                    }
-                  }
-                }),
-
-          const SizedBox(height: 24),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _teacherDetails() {
+  Widget _teacherDetails(
+      BuildContext context, OrganizationSignupProvider provider) {
     return Column(
       children: [
         UiHelpers.customTextField(
           context,
           hintText: "Full Name",
-          controller: fullNameController,
-          prefixIcon: Icon(Icons.person),
-          validator: (val) => val == null || val.trim().isEmpty
-              ? 'Full Name is required'
-              : null,
+          controller: provider.fullNameController,
+          prefixIcon: const Icon(Icons.person),
+          validator: (val) =>
+              val == null || val.trim().isEmpty ? 'Full Name is required' : null,
         ),
         const SizedBox(height: 16),
         UiHelpers.customTextField(
           context,
           hintText: "Email Address",
-          controller: emailController,
-          prefixIcon: Icon(Icons.email),
+          controller: provider.emailController,
+          prefixIcon: const Icon(Icons.email),
           keyboardType: TextInputType.emailAddress,
           validator: (val) =>
               val == null || !val.contains('@') ? 'Enter a valid email' : null,
@@ -321,8 +202,8 @@ class _OrganizationSignupState extends State<OrganizationSignupScreen> {
         UiHelpers.customTextField(
           context,
           hintText: "Phone Number",
-          controller: phoneController,
-          prefixIcon: Icon(Icons.phone),
+          controller: provider.phoneController,
+          prefixIcon: const Icon(Icons.phone),
           keyboardType: TextInputType.phone,
           validator: (val) => val == null || val.length != 10
               ? 'Enter a valid 10-digit phone number'
@@ -332,18 +213,14 @@ class _OrganizationSignupState extends State<OrganizationSignupScreen> {
         UiHelpers.customTextField(
           context,
           hintText: "Password",
-          controller: passwordController,
+          controller: provider.passwordController,
           prefixIcon: const Icon(Icons.lock),
-          obscureText: _obscurePassword,
+          obscureText: provider.obscurePassword,
           suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-            ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
+            icon: Icon(provider.obscurePassword
+                ? Icons.visibility_off
+                : Icons.visibility),
+            onPressed: provider.togglePassword,
           ),
           validator: (val) => val != null && val.length < 6
               ? 'Password must be at least 6 characters'
@@ -353,81 +230,40 @@ class _OrganizationSignupState extends State<OrganizationSignupScreen> {
     );
   }
 
-  Widget _coachingDetails() {
+  Widget _coachingDetails(
+      BuildContext context, OrganizationSignupProvider provider) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         UiHelpers.customTextField(
           context,
           hintText: "Coaching Name",
-          controller: coachingNameController,
-          prefixIcon: Icon(Icons.business),
-          validator: (val) => val == null || val.trim().isEmpty
-              ? 'Coaching name is required'
-              : null,
-        ),
-        const SizedBox(height: 16),
-        UiHelpers.customTextField(
-          context,
-          hintText: "Contact Number",
-          controller: phoneController,
-          prefixIcon: Icon(Icons.phone),
-          keyboardType: TextInputType.phone,
-          validator: (val) => val == null || val.length != 10
-              ? 'Enter a valid 10-digit contact number'
-              : null,
+          controller: provider.coachingNameController,
+          prefixIcon: const Icon(Icons.business),
+          validator: (val) =>
+              val == null || val.trim().isEmpty ? 'Coaching name is required' : null,
         ),
         const SizedBox(height: 16),
         UiHelpers.customTextField(
           context,
           hintText: "Coaching Address",
-          controller: coachingAddressController,
-          prefixIcon: Icon(Icons.location_on),
+          controller: provider.coachingAddressController,
+          prefixIcon: const Icon(Icons.location_on),
           validator: (val) =>
               val == null || val.trim().isEmpty ? 'Address is required' : null,
         ),
         const SizedBox(height: 24),
-        UiHelpers.sectionTitle("Upload Image"),
+        UiHelpers.sectionTitle("Upload Images"),
         const SizedBox(height: 10),
         ImagePickerWidget(
-          onImageSelected: (file) async {
-            setState(() {
-              isUploadingTeacherImage = true;
-            });
-            final url = await uploadImageToCloudinary(
-              file,
-              folderName: "testify_learn/images",
-            );
-            log(url.toString());
-            if (url != null) {
-              setState(() {
-                teacherImageUrl = url;
-                isUploadingTeacherImage = false;
-              });
-            }
-          },
           title: "Upload teacher image",
-          isLoading: isUploadingTeacherImage,
+          isLoading: provider.isUploadingTeacherImage,
+          onImageSelected: provider.pickTeacherImage,
         ),
         const SizedBox(height: 24),
         ImagePickerWidget(
-          onImageSelected: (file) async {
-            setState(() {
-              isUploadingCoachingImage = true;
-            });
-            final url = await uploadImageToCloudinary(
-              file,
-              folderName: "testify_learn/images",
-            );
-            if (url != null) {
-              setState(() {
-                coachingImageUrl = url;
-                isUploadingCoachingImage = false;
-              });
-            }
-          },
           title: "Upload coaching image",
-          isLoading: isUploadingCoachingImage,
+          isLoading: provider.isUploadingCoachingImage,
+          onImageSelected: provider.pickCoachingImage,
         ),
       ],
     );

@@ -30,7 +30,7 @@ class StudentsListScreen extends StatelessWidget {
     });
 
     if (provider.isLoading && provider.students.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return TestCardShimmer(count: 10,);
     }
 
     final filteredDocs = searchQuery.isEmpty

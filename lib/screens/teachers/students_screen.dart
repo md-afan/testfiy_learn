@@ -71,29 +71,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
     super.dispose();
   }
 
-  Widget _buildShimmerList() {
-    return ListView.builder(
-      itemCount: 6,
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Shimmer.fromColors(
-            baseColor: Colors.grey.withValues(alpha: 0.3),
-            highlightColor: Colors.grey.withValues(alpha: 0.1),
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<StudentsProvider>();
@@ -135,9 +112,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
       ),
       body: SafeArea(
         child: coachingCode == null
-            ? _buildShimmerList()
+            ? TestCardShimmer(
+                count: 10,
+              )
             : provider.isLoading && provider.students.isEmpty
-                ? _buildShimmerList()
+                ? TestCardShimmer(
+                    count: 10,
+                  )
                 : RefreshIndicator(
                     onRefresh: _onRefresh,
                     child: Builder(builder: (context) {

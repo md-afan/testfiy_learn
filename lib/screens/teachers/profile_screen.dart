@@ -61,7 +61,12 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
 
     final provider =
         Provider.of<TeacherProfileProvider>(context, listen: false);
-    await provider.updateImage(file, uid);
+
+    if (isProfile) {
+      await provider.updateImage(file, uid);
+    } else {
+      await provider.updateCoverImages(file, uid);
+    }
 
     setState(() {
       isProfileImage = false;
@@ -132,7 +137,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                   coverImageUrl: provider.teacher?.coachingImageUrl ?? "",
                   onProfileImageTap: () => _showImagePicker(true),
                   onCoverImageTap: () => _showImagePicker(false),
-                  isUploadingImage: isProfileImage || isCoverImage,
+                  isUploadingImage: isProfileImage,
+                  isUploadingCoverImages: isCoverImage,
                   showBackButton: false,
                   actions: [
                     IconButton(
@@ -208,8 +214,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                             ModernDetailRow(
                               icon: Icons.school,
                               label: "Coaching Name",
-                              value: provider.teacher?.coachingName ??
-                                  suggestInfo,
+                              value:
+                                  provider.teacher?.coachingName ?? suggestInfo,
                             ),
                             ModernDetailRow(
                               icon: Icons.code,
@@ -232,16 +238,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      if (provider.teacher != null)
-                        TextButton.icon(
-                          onPressed: () =>
-                              _logout(context, provider.teacher!.coachingCode),
-                          icon: const Icon(Icons.logout,
-                              color: Colors.redAccent),
-                          label: const Text("Logout",
-                              style: TextStyle(color: Colors.redAccent)),
-                        ),
-                      const SizedBox(height: 30),
+                      
                     ],
                   ),
                 ),

@@ -8,10 +8,6 @@ import admin from "firebase-admin";
 import dotenv from "dotenv";
 dotenv.config();
 
-// import feature
-import { getPayoutToken, requestWithdrawal } from './features/payout.mjs';
-
-
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
 });
@@ -21,7 +17,7 @@ const pubsub = new PubSub();
 setGlobalOptions({ maxInstances: 10 });
 
 export { default as generateCashfreeToken } from './features/payment.mjs';
-export { requestWithdrawal, getPayoutToken }
+export { default as cashfreePayToPhone } from './features/payout.mjs';
 
 
 // 🔁 Scheduled Function (every 1 min)
@@ -29,7 +25,6 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
   "every 1 minutes",
   async () => {
     const now = new Date();
-
     const quizzesSnapshot = await db
       .collection("quizzes")
       .where("isPublished", "==", true)
@@ -41,6 +36,8 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
       const title = quiz.title || "Untitled Quiz";
       const startTime = quiz.testDateTime?.toDate();
       const duration = parseInt(quiz.duration || "0");
+      const teacherId = quiz.createdBy;
+      const coachingCode = quiz.coachingCode;
       const endTime = startTime
         ? new Date(startTime.getTime() + duration * 60000)
         : null;
@@ -49,7 +46,6 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
 
       const notifications = [];
       const diffMinutes = Math.floor((startTime - now) / 60000);
-
       let newStatus = quiz.status;
 
       // 🟡 Check if quiz is running but not yet marked as "live"
@@ -71,17 +67,7 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
           notifications.push("live");
         } else if (quiz.status !== "pending") {
           newStatus = "pending";
-
-          await pubsub.topic("quizNotifications").publishMessage({
-            json: {
-              quizId,
-              title,
-              timeType: "insufficient_enrollment",
-              enrolled: enrolledStudentCount,
-            },
-          });
-
-          console.log(`${title} not live. Enrolled: ${enrolledStudentCount}`);
+          notifications.push("insufficient_enrollment");
         }
       }
 
@@ -108,7 +94,7 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
       // 📤 Publish all queued notifications
       for (const type of notifications) {
         await pubsub.topic("quizNotifications").publishMessage({
-          json: { quizId, title, timeType: type },
+          json: { quizId, title, teacherId, coachingCode, timeType: type },
         });
       }
     }
@@ -119,7 +105,9 @@ export const sendQuizNotificationAndUpdateStatus = onSchedule(
 export const sendQuizNotificationWorker = onMessagePublished(
   "quizNotifications",
   async (event) => {
-    const { quizId, title, timeType } = event.data.message.json;
+    const { quizId, title, teacherId, coachingCode, timeType } = event.data.message.json;
+    console.log(teacherId, coachingCode);
+    console.log(event.data.message.json, teacherId, coachingCode);
 
     const titles = {
       "1d": ["Quiz Tomorrow", "Upcoming Quiz Reminder"],
@@ -153,13 +141,10 @@ l be rescheduled.`,
       ],
     };
 
-
     const [notifTitleStudent, notifTitleTeacher] = titles[timeType];
     const [notifBodyStudent, notifBodyTeacher] = bodies[timeType];
 
     const quizRef = db.collection("quizzes").doc(quizId);
-    const quizSnap = await quizRef.get();
-    const teacherId = quizSnap.data() && quizSnap.data().createdBy;
     const enrolledSnapshot =
       await quizRef.collection("enrolledStudents").get();
 
@@ -168,14 +153,20 @@ l be rescheduled.`,
     const notifDataStudent = {
       title: notifTitleStudent,
       body: notifBodyStudent,
-      data: { quizId, type: timeType },
+      senderId: coachingCode,
+      senderType: "coachingCodes",
+      read: false,
+      data: { id: quizId, type: "quiz", timeType: timeType, coachingCode },
       createdAt: timestamp,
     };
 
     const notifDataTeacher = {
       title: notifTitleTeacher,
       body: notifBodyTeacher,
-      data: { quizId, type: timeType },
+      senderId: coachingCode,
+      senderType: "coachingCodes",
+      read: false,
+      data: { id: quizId, type: "quiz", timeType: timeType, coachingCode },
       createdAt: timestamp,
     };
 
@@ -197,7 +188,12 @@ l be rescheduled.`,
           title: notifTitleStudent,
           body: notifBodyStudent,
         },
-        data: { quizId, type: timeType },
+        data: {
+          id: quizId,
+          type: "quiz",
+          timeType: timeType,
+          coachingCode
+        },
       });
 
       if (teacherId) {
@@ -207,7 +203,7 @@ l be rescheduled.`,
             title: notifTitleTeacher,
             body: notifBodyTeacher,
           },
-          data: { quizId, type: timeType },
+          data: { id: quizId, type: "quiz", timeType: timeType, coachingCode },
         });
       }
     } catch (error) {
@@ -238,6 +234,7 @@ export const generateLeaderboard =
     const fee = after.fee || 0;
     const quizTitle = after.title || "Untitled";
     const createdBy = after.createdBy || null;
+    const coachingCode = after.coachingCode || null;
 
     const messaging = admin.messaging();
 
@@ -327,16 +324,7 @@ export const generateLeaderboard =
       { merge: true }
     );
 
-    // Global payments entry for quiz
-    const paymentRef = db.collection("payments").doc();
-    batch.set(paymentRef, {
-      quizId: testId,
-      totalRevenue: fmt(totalRevenue),
-      teacherShare: fmt(teacherShare),
-      appShare: fmt(appShare),
-      studentPool: fmt(studentPool),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+
 
     // ✅ Loop through student submissions
     for (let i = 0; i < submissions.length; i++) {
@@ -397,7 +385,14 @@ export const generateLeaderboard =
           .collection("notifications").add({
             title: `Quiz Completed: ${quizTitle}`,
             body: `Check your rank and rewards in the leaderboard.`,
-            data: { type: "quiz_reward", quizId: testId },
+            senderId: coachingCode,
+            senderType: "coachingCodes",
+            read: false,
+            data: {
+              id: testId,
+              type: "leaderboard",
+              coachingCode
+            },
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
       } catch (error) {
@@ -434,26 +429,16 @@ export const generateLeaderboard =
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Payment entry for teacher
-      const teacherPaymentRef = db.collection("payments").doc();
-      batch.set(teacherPaymentRef, {
-        paymentId: teacherPaymentRef.id,
-        teacherUid: createdBy,
-        testId,
-        amount: fmt(teacherShare),
-        type: "teacher_share",
-        paidAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: "success",
-        upiId: "wallet",
-      });
-
       // Notification for teacher
       try {
         await db.collection("teachers").doc(createdBy).collection("notifications").add({
           title: `Quiz Earnings Credited`,
           body: `You earned ₹${fmt(teacherShare)} from quiz "${quizTitle}".`,
+          senderId: coachingCode,
+          senderId: "coachingCodes",
+          read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          data: { type: "quiz_teacher_reward", quizId: testId },
+          data: { type: "quiz", id: testId, coachingCode },
         });
       } catch (err) {
         console.warn("❌ Failed to write teacher notification:", err);
@@ -559,7 +544,12 @@ export const notifyTeacherOnStudentEnrollAndPayment = onDocumentCreated(
         .add({
           title: " New Student Enrolled",
           body: `${studnetName} enrolled and paid for "${quizTitle}".`,
-          data: { quizId, studentId },
+          senderId: studentId,
+          senderType: "students",
+          read: false,
+          data: {
+            id: studentId, type: "students", coachingCode
+          },
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
@@ -570,7 +560,10 @@ export const notifyTeacherOnStudentEnrollAndPayment = onDocumentCreated(
         .add({
           title: "Enrollment Confirmed",
           body: `You've successfully enrolled in "${quizTitle}".`,
-          data: { quizId },
+          senderId: coachingCode,
+          senderType: "coachingCodes",
+          read: false,
+          data: { id: quizId, type: "quiz", coachingCode },
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
@@ -587,9 +580,7 @@ export const notifyTeacherOnStudentEnrollAndPayment = onDocumentCreated(
              "${quizTitle}".`,
           },
           data: {
-            quizId,
-            studentId,
-            type: "enrollment",
+            id: studentId, type: "students", coachingCode
           },
         };
 
@@ -624,10 +615,7 @@ export const notifyTeacherOnStudentEnrollAndPayment = onDocumentCreated(
             title: "You're Enrolled!",
             body: `You joined "${quizTitle}". Best of luck!`,
           },
-          data: {
-            quizId,
-            type: "confirmation",
-          },
+          data: { id: quizId, type: "quiz", coachingCode },
         };
 
         const response =
@@ -891,7 +879,7 @@ export const notifyTeacherOnNewStudentJoin =
       try {
         const studentDoc = await db.collection("students").doc(studentId).get();
         const student = studentDoc.data();
-        const studentName = student && student.name || "A student";
+        const studentName = student && student.name || "student";
         const studentFcmTokens = student && student.fcmTokens || [];
 
         const coachingDoc =
@@ -906,10 +894,8 @@ export const notifyTeacherOnNewStudentJoin =
         }
 
         const teacherRef = db.collection("teachers").doc(teacherId);
-        const teacherDoc = await teacherRef.get();
-        const teacherData = teacherDoc.data();
-
-
+        // const teacherDocs = db.collection("coachingCodes").doc(coachingCode)
+        //   .collection("teachers");
 
         const timestamp = admin.firestore.FieldValue.serverTimestamp();
 
@@ -917,7 +903,10 @@ export const notifyTeacherOnNewStudentJoin =
         await teacherRef.collection("notifications").add({
           title: "New Student Joined",
           body: `${studentName} has joined your coaching.`,
-          data: { studentId, coachingCode },
+          senderId: studentDoc.id,
+          senderType: 'students',
+          read: false,
+          data: { id: studentId, type: "students", coachingCode },
           createdAt: timestamp,
         });
 
@@ -929,9 +918,9 @@ export const notifyTeacherOnNewStudentJoin =
             body: `${studentName} has joined ${coachingName ?? "your organization"}.`,
           },
           data: {
-            studentId,
-            coachingCode,
-            type: "student_joined",
+            id: studentId,
+            type: "students",
+            coachingCode
           },
         });
 
@@ -942,7 +931,14 @@ export const notifyTeacherOnNewStudentJoin =
           .add({
             title: `Welcome to ${coachingName}`,
             body: `You’ve successfully joined ${coachingName}.`,
-            data: { coachingCode },
+            senderId: coachingCode,
+            senderType: 'coachingCodes',
+            read: false,
+            data: {
+              id: coachingCode,
+              type: "coachingCodes",
+              coachingCode
+            },
             createdAt: timestamp,
           });
 
@@ -955,8 +951,9 @@ export const notifyTeacherOnNewStudentJoin =
               body: `You’ve successfully joined ${coachingName}.`,
             },
             data: {
-              coachingCode,
-              type: "welcome",
+              id: coachingCode,
+              type: "coachingCodes",
+              coachingCode
             },
           });
         }
@@ -964,10 +961,6 @@ export const notifyTeacherOnNewStudentJoin =
         console.error("Error notifying teacher or student of join:", error);
       }
     });
-
-
-
-
 
 export const notifyTransaction = onDocumentCreated(
   "wallets/{uid}/transactions/{txnId}",
@@ -1009,7 +1002,6 @@ export const notifyTransaction = onDocumentCreated(
       const payload = {
         tokens: tokens,
         notification: {
-
           title: notifTitle,
           body: notifBody,
         },
@@ -1028,8 +1020,12 @@ export const notifyTransaction = onDocumentCreated(
       const notifData = {
         title: notifTitle,
         body: notifBody,
+        senderId: uid,
+        senderType: role === "teacher" ? "teachers" : "students",
+        read: false,
         data: {
-          txnId: txnId,
+          id: txnId,
+          type: "transections",
           amount: txnAmount.toString(),
         },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1049,6 +1045,300 @@ export const notifyTransaction = onDocumentCreated(
 );
 
 
-// cashfree payment getway intigration in firebase, 
+// cashfree payment getway intigration in firebase,
 // when user pay the amount then update the wallet balance
+
+
+export const notifyAllRolesOnQuizPublishOrUpdateTestDate =
+  onDocumentUpdated("quizzes/{quizId}", async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    const messaging = admin.messaging();
+    const quizId = event.params.quizId;
+    const title = after.title;
+    const coachingCode = after.coachingCode;
+    const teacherId = after.createdBy;
+    const messages = [];
+
+    // ✅ PUBLISH
+    if (!before.isPublished && after.isPublished) {
+      try {
+        // Teacher notification
+        await db.collection("teachers")
+          .doc(teacherId)
+          .collection("notifications")
+          .add({
+            title: "Quiz Published",
+            body: `Your quiz "${title}" has been successfully published.`,
+            senderId: coachingCode,
+            senderType: 'coachingCodes',
+            reed: false,
+            data: {
+              id: quizId,
+              type: 'quiz',
+              timeType: null,
+              coachingCode
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+        // Student notifications
+        const studentsRef = await db
+          .collection("coachingCodes")
+          .doc(coachingCode)
+          .collection("students")
+          .get();
+
+        if (!studentsRef.empty) {
+          const studentNotifs = studentsRef.docs.map(async (doc) => {
+            const studentId = doc.id;
+            await db.collection("students")
+              .doc(studentId)
+              .collection("notifications")
+              .add({
+                title: "New Quiz Published",
+                body: `A new quiz has been published by your coaching.`,
+                senderId: teacherId,
+                senderType: 'teachers',
+                read: false,
+                data: {
+                  id: quizId,
+                  type: "quiz",
+                  coachingCode
+                },
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+          });
+
+          await Promise.all(studentNotifs);
+        }
+
+        // FCM Messages
+        messages.push(
+          {
+            topic: `${coachingCode}_students`,
+            notification: {
+              title: "New Quiz Published",
+              body: `A new quiz "${title}" is available from your coaching.`,
+            },
+            data: {
+              id: quizId,
+              type: "quiz",
+              coachingCode
+            },
+          },
+          {
+            topic: `${coachingCode}_teacher`,
+            notification: {
+              title: "Quiz Published",
+              body: `Your quiz "${title}" has been successfully published.`,
+            },
+            data: {
+              id: quizId,
+              type: "quiz",
+              coachingCode
+            },
+          },
+        );
+      } catch (err) {
+        console.error("Error on publish:", err);
+      }
+    }
+
+    // ✅ UNPUBLISH
+    if (before.isPublished && !after.isPublished) {
+      try {
+        // Teacher notification
+        await db.collection("teachers")
+          .doc(teacherId)
+          .collection("notifications")
+          .add({
+            title: "Quiz Unpublished",
+            body: `Your quiz "${title}" has been unpublished.`,
+            senderId: coachingCode,
+            senderType: 'coachingCodes',
+            read: false,
+            data: {
+              id: quizId,
+              type: 'quiz',
+              coachingCode
+
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+        // Student notifications
+        const studentsRef = await db
+          .collection("coachingCodes")
+          .doc(coachingCode)
+          .collection("students")
+          .get();
+
+        if (!studentsRef.empty) {
+          const studentNotifs = studentsRef.docs.map(async (doc) => {
+            const studentId = doc.id;
+            await db.collection("students")
+              .doc(studentId)
+              .collection("notifications")
+              .add({
+                title: "Quiz Unpublished",
+                body: `Quiz "${title}" is no longer available.`,
+                senderId: teacherId,
+                senderType: 'teachers',
+                read: false,
+                data: { id: quizId, type: 'quiz', coachingCode },
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+          });
+
+          await Promise.all(studentNotifs);
+        }
+
+        // FCM Messages
+        messages.push(
+          {
+            topic: `${coachingCode}_students`,
+            notification: {
+              title: "Quiz Unpublished",
+              body: `Quiz "${title}" is currently unavailable.`,
+            },
+            data: {
+              id: quizId,
+              coachingCode,
+              type: "unpublished",
+            },
+          },
+          {
+            topic: `${coachingCode}_teacher`,
+            notification: {
+              title: "Quiz Unpublished",
+              body: `Your quiz "${title}" has been unpublished.`,
+            },
+            data: {
+              quizId,
+              coachingCode,
+              type: "unpublished",
+            },
+          },
+        );
+      } catch (err) {
+        console.error("Error on unpublish:", err);
+      }
+    }
+
+    // ✅ TIME CHANGE
+    const beforeStart = before.testDateTime &&
+      before.testDateTime.toMillis() || 0;
+    const afterStart = after.testDateTime && after.testDateTime.toMillis() || 0;
+
+    if (beforeStart !== afterStart) {
+      const formattedNewTime = new Date(afterStart).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+
+      try {
+        // Teacher notification
+        await db.collection("teachers")
+          .doc(teacherId)
+          .collection("notifications")
+          .add({
+            title: "Quiz Time Changed",
+            body: `Your quiz "${title}" start time has been updated
+               to ${formattedNewTime}.`,
+            senderId: coachingCode,
+            senderType: 'coachingCodes',
+            redd: false,
+            data: {
+              id: quizId,
+              type: "quiz",
+              coachingCode
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+        // Student notifications
+        const studentsRef = await db
+          .collection("coachingCodes")
+          .doc(coachingCode)
+          .collection("students")
+          .get();
+
+        if (!studentsRef.empty) {
+          const studentNotifs = studentsRef.docs.map(async (doc) => {
+            const studentId = doc.id;
+            await db.collection("students")
+              .doc(studentId)
+              .collection("notifications")
+              .add({
+                title: "Quiz Time Updated",
+                body: `Quiz "${title}" has a new start time:
+                   ${formattedNewTime}.`,
+
+                senderId: teacherId,
+                senderType: "teachers",
+                read: false,
+                data: {
+                  id: quizId,
+                  type: quizId,
+                  coachingCode
+                },
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+          });
+
+          await Promise.all(studentNotifs);
+        }
+
+        // FCM Messages
+        messages.push(
+          {
+            topic: `${coachingCode}_students`,
+            notification: {
+              title: "Quiz Time Updated",
+              body: `Quiz "${title}" has a new start time:
+                 ${formattedNewTime}`,
+            },
+            data: {
+              quizId,
+              coachingCode,
+              type: "time_update",
+            },
+          },
+          {
+            topic: `${coachingCode}_teacher`,
+            notification: {
+              title: "Quiz Time Changed",
+              body: `Your quiz "${title}" start time has been updated to
+               ${formattedNewTime}.`,
+            },
+            data: {
+              quizId,
+              coachingCode,
+              type: "time_update",
+            },
+          },
+        );
+      } catch (err) {
+        console.error("Error on time change:", err);
+      }
+    }
+
+    // ✅ SEND FCM NOTIFICATIONS
+    if (messages.length > 0) {
+      try {
+        const sendAll = messages.map((msg) => messaging.send(msg));
+        await Promise.all(sendAll);
+      } catch (error) {
+        console.error("Failed to send FCM notifications:", error);
+      }
+    }
+  });
+
+
+
 

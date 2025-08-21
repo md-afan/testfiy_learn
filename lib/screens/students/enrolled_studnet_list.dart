@@ -54,57 +54,9 @@ class _EnrolledStudentsScreenState extends State<EnrolledStudentsScreen> {
               await provider.fetchStudents(isRefresh: true);
             },
             child: provider.isLoading && uids.isEmpty
-                ? GlobalShimmerScreen(
-                    isLoading: true,
-                    itemCount: 8,
-                    height: 80,
-                    child: ListView.builder(
-                      itemCount: 8,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      itemBuilder: (_, __) => Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        child: Row(
-                          children: [
-                            // Profile image placeholder
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Name + subtitle placeholder
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 14,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    height: 12,
-                                    width: 150,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                ? TestCardShimmer(
+                    count: 10,
+                    hiddenBottomLable:true
                   )
                 : uids.isEmpty
                     ? const Center(
@@ -168,8 +120,8 @@ class _EnrolledStudentsScreenState extends State<EnrolledStudentsScreen> {
                                   : 'Enrollment date unknown',
                               imagesUrl: imageUrl,
                               onTap: () {
-                                context.push(
-                                    '${AppRoutes.studentDetails}/$uid');
+                                context
+                                    .push('${AppRoutes.studentDetails}/$uid');
                               },
                             ),
                           );

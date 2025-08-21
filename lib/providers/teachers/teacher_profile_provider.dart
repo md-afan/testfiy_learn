@@ -92,6 +92,34 @@ class TeacherProfileProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateCoverImages(File file, String uid) async {
+    if (_teacher == null) return;
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final url = await uploadImageToCloudinary(
+        file,
+        folderName: "testify_learn/images",
+      );
+      await _firestore.collection('teachers').doc(uid).update({
+        "coachingImageUrl": url,
+      });
+
+      if (_teacher!.isAdmin) {
+        await _firestore
+            .collection("coachingCodes")
+            .doc(_teacher!.coachingCode)
+            .update({"logoUrl": url});
+      }
+
+      _teacher = _teacher!.copyWith(coachingImageUrl: url);
+    } catch (e) {
+      _error = 'Image update failed: $e';
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> refreshProfileData(String uid) async {
     await fetchTeacherProfile(uid);
   }

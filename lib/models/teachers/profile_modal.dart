@@ -11,38 +11,39 @@ class TeacherModel {
   final String coachingName;
   final String coachingCode;
   final String coachingAddress;
+  final bool isAdmin;
 
-  TeacherModel({
-    required this.fullName,
-    required this.email,
-    required this.phone,
-    required this.dob,
-    required this.gender,
-    required this.about,
-    required this.skills,
-    required this.teacherImageUrl,
-    required this.coachingImageUrl,
-    required this.coachingName,
-    required this.coachingCode,
-    required this.coachingAddress,
-  });
+  TeacherModel(
+      {required this.fullName,
+      required this.email,
+      required this.phone,
+      required this.dob,
+      required this.gender,
+      required this.about,
+      required this.skills,
+      required this.teacherImageUrl,
+      required this.coachingImageUrl,
+      required this.coachingName,
+      required this.coachingCode,
+      required this.coachingAddress,
+      required this.isAdmin});
 
   factory TeacherModel.fromMap(Map<String, dynamic> map) {
     String suggInfo = 'Add in';
     return TeacherModel(
-      fullName: map['fullName'],
-      email: map['email'],
-      phone: map['phone'],
-      dob: map['dob'] ?? suggInfo,
-      gender: map['gender'] ?? suggInfo,
-      about: map['about'] ?? suggInfo,
-      skills: map['skills'] ?? suggInfo,
-      teacherImageUrl: map['teacherImageUrl'] ?? suggInfo,
-      coachingImageUrl: map['coachingImageUrl'] ?? suggInfo,
-      coachingName: map['coachingName'] ?? suggInfo,
-      coachingCode: map['coachingCode'] ?? suggInfo,
-      coachingAddress: map['coachingAddress'] ?? suggInfo,
-    );
+        fullName: map['fullName'],
+        email: map['email'],
+        phone: map['phone'],
+        dob: map['dob'] ?? suggInfo,
+        gender: map['gender'] ?? suggInfo,
+        about: map['about'] ?? suggInfo,
+        skills: map['skills'] ?? suggInfo,
+        teacherImageUrl: map['teacherImageUrl'] ?? suggInfo,
+        coachingImageUrl: map['coachingImageUrl'] ?? suggInfo,
+        coachingName: map['coachingName'] ?? suggInfo,
+        coachingCode: map['coachingCode'] ?? suggInfo,
+        coachingAddress: map['coachingAddress'] ?? suggInfo,
+        isAdmin: map['isAdmin'] ?? false);
   }
 
   Map<String, dynamic> toMap() {
@@ -59,6 +60,7 @@ class TeacherModel {
       'coachingName': coachingName,
       'coachingCode': coachingCode,
       'coachingAddress': coachingAddress,
+      'isAdmin': isAdmin
     };
   }
 
@@ -77,18 +79,18 @@ class TeacherModel {
     String? coachingAddress,
   }) {
     return TeacherModel(
-      fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      dob: dob ?? this.dob,
-      gender: gender ?? this.gender,
-      about: about ?? this.about,
-      skills: skills ?? this.skills,
-      teacherImageUrl: teacherImageUrl ?? this.teacherImageUrl,
-      coachingImageUrl: coachingImageUrl ?? this.coachingImageUrl,
-      coachingName: coachingName ?? this.coachingName,
-      coachingCode: coachingCode ?? this.coachingCode,
-      coachingAddress: coachingAddress ?? this.coachingAddress,
-    );
+        fullName: fullName ?? this.fullName,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        dob: dob ?? this.dob,
+        gender: gender ?? this.gender,
+        about: about ?? this.about,
+        skills: skills ?? this.skills,
+        teacherImageUrl: teacherImageUrl ?? this.teacherImageUrl,
+        coachingImageUrl: coachingImageUrl ?? this.coachingImageUrl,
+        coachingName: coachingName ?? this.coachingName,
+        coachingCode: coachingCode ?? this.coachingCode,
+        coachingAddress: coachingAddress ?? this.coachingAddress,
+        isAdmin: isAdmin ?? this.isAdmin);
   }
 }

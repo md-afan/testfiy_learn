@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './global_shimmer_screen.dart';
 
 class TransactionTile extends StatelessWidget {
   final String title;
@@ -8,7 +9,6 @@ class TransactionTile extends StatelessWidget {
 
   const TransactionTile({
     super.key,
-
     required this.title,
     required this.date,
     required this.amount,
@@ -61,6 +61,57 @@ class TransactionTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TransecctionTileShimmer extends StatelessWidget {
+  final int count; // number of shimmer cards
+
+  const TransecctionTileShimmer({super.key, this.count = 3});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).colorScheme;
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          return GlobalShimmerScreen(
+            isLoading: true,
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration:
+                    BoxDecoration(shape: BoxShape.circle, color: theme.surface),
+              ),
+              title: Container(
+                width: double.infinity,
+                height: 14,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: theme.surface),
+              ),
+              subtitle: Container(
+                width: 100,
+                height: 12,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: theme.surface),
+              ),
+              trailing: Container(
+                width: 50,
+                height: 14,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: theme.surface),
+              ),
+            ),
+          );
+        },
+        childCount: count,
       ),
     );
   }

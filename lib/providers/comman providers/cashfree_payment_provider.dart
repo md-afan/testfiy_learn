@@ -4,7 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfsession/cfsession.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfpayment/cfwebcheckoutpayment.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cfpaymentgateway/cfpaymentgatewayservice.dart';
-import 'package:flutter_cashfree_pg_sdk/api/cftheme/cftheme.dart';
+// import 'package:flutter_cashfree_pg_sdk/api/cftheme/cftheme.dart';
 import 'package:flutter_cashfree_pg_sdk/api/cferrorresponse/cferrorresponse.dart';
 import 'package:flutter_cashfree_pg_sdk/utils/cfenums.dart'; // For CFEnvironment
 
@@ -25,7 +25,8 @@ class CashfreePaymentProvider with ChangeNotifier {
 
     try {
       // 1. Call Firebase Function to generate payment session
-      final callable = FirebaseFunctions.instance.httpsCallable('generateCashfreeToken');
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('generateCashfreeToken');
       final response = await callable.call({
         "orderId": orderId,
         "amount": amount,
@@ -39,23 +40,23 @@ class CashfreePaymentProvider with ChangeNotifier {
 
       // 2. Create a Cashfree session
       final session = CFSessionBuilder()
-          .setEnvironment(CFEnvironment.SANDBOX) // Switch to PRODUCTION when deploying live
+          .setEnvironment(
+              CFEnvironment.SANDBOX) // Switch to PRODUCTION when deploying live
           .setOrderId(orderId)
           .setPaymentSessionId(paymentSessionId)
           .build();
 
       // 3. Build the Web Checkout Payment object
-      final cfWebCheckout = CFWebCheckoutPaymentBuilder()
-          .setSession(session)
-          .build();
+      final cfWebCheckout =
+          CFWebCheckoutPaymentBuilder().setSession(session).build();
 
-      // 4. (Optional) Customize Theme UI
-      final theme = CFThemeBuilder()
-          .setNavigationBarBackgroundColorColor("#4CAF50")
-          .setNavigationBarTextColor("#FFFFFF")
-          .setButtonBackgroundColor("#4CAF50")
-          .setButtonTextColor("#FFFFFF")
-          .build();
+      // // 4. (Optional) Customize Theme UI
+      // final theme = CFThemeBuilder()
+      //     .setNavigationBarBackgroundColorColor("#4CAF50")
+      //     .setNavigationBarTextColor("#FFFFFF")
+      //     .setButtonBackgroundColor("#4CAF50")
+      //     .setButtonTextColor("#FFFFFF")
+      //     .build();
 
       // 5. Start the Cashfree Payment flow with callbacks
       final cfService = CFPaymentGatewayService();
@@ -66,7 +67,8 @@ class CashfreePaymentProvider with ChangeNotifier {
           notifyListeners();
         },
         (CFErrorResponse error, String returnedOrderId) {
-          paymentStatus = "Payment Failed: ${error.getMessage()} for $returnedOrderId";
+          paymentStatus =
+              "Payment Failed: ${error.getMessage()} for $returnedOrderId";
           isProcessing = false;
           notifyListeners();
         },

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/secure_locally_storage.dart';
+import '../../utils/enryped_decryped.dart';
 
 class NotificationProvider with ChangeNotifier {
+  String? _role;
   String? _userId;
   String get userId => _userId ?? '';
+  String get role => _role ?? '';
 
   String _selectedFilter = 'All';
   String get selectedFilter => _selectedFilter;
@@ -34,16 +37,21 @@ class NotificationProvider with ChangeNotifier {
 
   Future<void> _loadUserId() async {
     final id = await LocalStorage.getLocalStorage("uid");
+    final encryptedRole = await LocalStorage.getLocalStorage("role");
+    final decriptedRole = await EncryptionHelper.decrypt(encryptedRole!);
+    _role = decriptedRole == "student" ? "students" : "teachers";
     _userId = id;
     notifyListeners();
   }
 
   // Stream for real-time notifications
   Stream<QuerySnapshot> get realTimeNotifications {
-    if (_userId == null) return const Stream.empty();
+    if (_userId == null && _role == null) {
+      return const Stream.empty();
+    }
 
     Query query = FirebaseFirestore.instance
-        .collection('students') // You can make this dynamic in screen
+        .collection(_role!)
         .doc(_userId!)
         .collection('notifications')
         .orderBy('createdAt', descending: true)
@@ -103,7 +111,7 @@ class NotificationProvider with ChangeNotifier {
   }
 
   Future<void> markAsRead(DocumentSnapshot doc) async {
-    await doc.reference.update({'isRead': true});
+    await doc.reference.update({'read': true});
   }
 
   String formatTimeAgo(DateTime date) {
@@ -116,18 +124,32 @@ class NotificationProvider with ChangeNotifier {
     return "${diff.inDays} days ago";
   }
 
-  IconData getIconForType(String type) {
-    switch (type) {
-      case 'quiz_reminder':
-        return Icons.access_alarm;
-      case 'attendance_reminder':
-        return Icons.how_to_reg;
-      case 'result':
-        return Icons.grade;
-      case 'leaderboard':
-        return Icons.emoji_events;
-      default:
-        return Icons.notifications;
+  /// 🔥 Fetch sender profile image based on senderType
+  Future<String?> getSenderImage(String senderId, String senderType) async {
+    print('$senderId $senderType');
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection(senderType)
+          .doc(senderId)
+          .get();
+      print(doc.data());
+
+      if (!doc.exists) return null;
+
+      switch (senderType) {
+        case "teachers":
+          return doc["teacherImageUrl"];
+        case "students":
+          return doc["profileImageUrl"];
+        case "coachingCodes":
+          return doc["logoUrl"];
+        default:
+          return null;
+      }
+    } catch (e) {
+      debugPrint("Error fetching sender image: $e");
+      return null;
     }
   }
 

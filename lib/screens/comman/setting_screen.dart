@@ -3,9 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
 import 'package:testify_learn_application/constants/app_routes.dart';
 import '../../utils/helpers.dart';
-import '../../providers/comman providers/theme_provider.dart'; // ✅ Add this
+import '../../providers/comman providers/theme_provider.dart';
+
+import './app_permission.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -16,11 +20,13 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool isNotificationsEnabled = true;
+  String appVersion = "";
 
   @override
   void initState() {
     super.initState();
     _loadNotificationSetting();
+    _loadAppVersion();
   }
 
   Future<void> _loadNotificationSetting() async {
@@ -36,55 +42,30 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => isNotificationsEnabled = value);
   }
 
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      appVersion = "${info.version} (${info.buildNumber})";
+    });
+  }
+
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     context.go('/login');
   }
 
-  Future<void> _deleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        await user.delete();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Account deleted")),
-        );
-        context.go('/login');
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error deleting account: $e")),
-        );
-      }
-    }
-  }
-
-  void _confirmDelete() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Delete Account"),
-        content: const Text("Are you sure you want to delete your account?"),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _deleteAccount();
-            },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+  void _openPermissions() {
+    // Just a placeholder - you can open app settings using `app_settings` package
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Redirecting to app permissions...")),
     );
+    // Example with app_settings package: AppSettings.openAppSettings();
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider =
-        Provider.of<ThemeProvider>(context); // ✅ Get theme provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       appBar: UiHelpers.customAppBarForScreen(
@@ -94,35 +75,89 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: ListView(
         children: [
+          // 🌙 Dark Mode
           SwitchListTile(
             title: const Text('Dark Mode'),
             value: themeProvider.isDarkMode,
             onChanged: (value) => themeProvider.toggleTheme(value),
             secondary: const Icon(Icons.dark_mode),
           ),
+
+          // 🔔 Notifications
           SwitchListTile(
             title: const Text('Notifications'),
             value: isNotificationsEnabled,
             onChanged: _toggleNotifications,
             secondary: const Icon(Icons.notifications),
           ),
+
           const Divider(),
+
+          // 🔑 Change Password
           ListTile(
             leading: const Icon(Icons.lock_reset),
             title: const Text('Change Password'),
             onTap: () => context.push(AppRoutes.changePassword),
           ),
+
+          // 📱 Permissions
+          ListTile(
+            leading: const Icon(Icons.security),
+            title: const Text('App Permissions'),
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PermissionsScreen()));
+            },
+          ),
+
+          // 📩 Contact Support
+          ListTile(
+            leading: const Icon(Icons.support_agent),
+            title: const Text('Contact Support'),
+            onTap: () {
+              // Example action: open email support
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Contacting support...")),
+              );
+            },
+          ),
+
+          // 📜 Privacy Policy
+          ListTile(
+            leading: const Icon(Icons.privacy_tip),
+            title: const Text('Privacy Policy'),
+            onTap: () {
+              // context.push(AppRoutes.privacyPolicy);
+            },
+          ),
+
+          // 📄 Terms & Conditions
+          ListTile(
+            leading: const Icon(Icons.article),
+            title: const Text('Terms & Conditions'),
+            onTap: () {
+              // context.push(AppRoutes.termsAndConditions);
+            },
+          ),
+
+          const Divider(),
+
+          // 🚪 Logout
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: _logout,
           ),
+
+          const Divider(),
+
+          // ℹ️ App Version
           ListTile(
-            leading: const Icon(Icons.delete),
-            title: const Text('Delete Account'),
-            textColor: Colors.red,
-            iconColor: Colors.red,
-            onTap: _confirmDelete,
+            leading: const Icon(Icons.info),
+            title: const Text('App Version'),
+            subtitle: Text(appVersion.isEmpty ? "Loading..." : appVersion),
           ),
         ],
       ),

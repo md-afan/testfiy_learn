@@ -1,12 +1,9 @@
 import axios from "axios";
 import * as functions from "firebase-functions";
 
-const  generateCashfreeToken = functions.https.onCall(async (req, context) => {
+const generateCashfreeToken = functions.https.onCall(async (req, context) => {
     try {
         const { orderId, amount, uid, email, phone } = req.data;
-        console.log(req.data);
-        console.log(req);
-
 
         const response = await axios.post("https://sandbox.cashfree.com/pg/orders", {
             order_id: orderId,

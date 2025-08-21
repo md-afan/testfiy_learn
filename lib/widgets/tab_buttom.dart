@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './global_shimmer_screen.dart';
 
 class TabButton extends StatelessWidget {
   final String label;
@@ -38,6 +39,35 @@ class TabButton extends StatelessWidget {
                   ? Colors.white
                   : Theme.of(context).textTheme.bodySmall!.color,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class TabButtonShimmer extends StatelessWidget {
+  final int count; // number of shimmer tabs
+
+  const TabButtonShimmer({super.key, this.count = 3});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(
+        count,
+        (index) => Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            child: GlobalShimmerScreen(
+              isLoading: true,
+              child: Container(
+                height: 45,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
           ),
         ),

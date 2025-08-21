@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import './color_pelette.dart';
 import './text_theme.dart';
+import './shimmer_theme.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -68,6 +69,13 @@ class AppTheme {
         backgroundColor: AppColors.textPrimary,
         behavior: SnackBarBehavior.floating,
       ),
+      // 👇 Attach shimmer colors
+      extensions: const <ThemeExtension<dynamic>>[
+        ShimmerTheme(
+          baseColor: Color(0xFFE0E0E0),
+          highlightColor: Color(0xFFF5F5F5),
+        ),
+      ],
     );
   }
 
@@ -82,7 +90,6 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: AppTextTheme.darkTextTheme,
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondaryDark,
@@ -129,6 +136,12 @@ class AppTheme {
         backgroundColor: AppColors.textPrimary,
         behavior: SnackBarBehavior.floating,
       ),
+      extensions: const <ThemeExtension<dynamic>>[
+        ShimmerTheme(
+          baseColor: Color(0xFF2A2A2A),
+          highlightColor: Color(0xFF3C3C3C),
+        ),
+      ],
     );
   }
 }

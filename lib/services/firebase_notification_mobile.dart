@@ -46,15 +46,14 @@ class FirebaseNotification {
     for (final t in types) {
       final topic = 'quiz_${quizId}_${t}_$role';
       await _messaging.subscribeToTopic(topic);
-      print('✅ Subscribed to $topic');
     }
-    await _messaging.unsubscribeFromTopic('quiz_${quizId}_$role');
+    await _messaging.subscribeToTopic('quiz_${quizId}_$role');
   }
 
   static Future<void> unSubscribeToQuizTopics(
       String quizId, bool isTeacher) async {
     final role = isTeacher ? 'teacher' : 'students';
-    final types = ['1d', '1h', '10m', 'live','insufficient_enrollment'];
+    final types = ['1d', '1h', '10m', 'live', 'insufficient_enrollment'];
     for (final t in types) {
       final topic = 'quiz_${quizId}_${t}_$role';
       await _messaging.unsubscribeFromTopic(topic);
@@ -89,27 +88,27 @@ class FirebaseNotification {
     return await _messaging.getToken();
   }
 
-  static Future<void> subscribeToCoaching(String coachingCode, bool isTeacher) async {
-  try {
-    final messaging = FirebaseMessaging.instance;
-    String topic =
-        isTeacher ? '${coachingCode}_teacher' : '${coachingCode}_students';
-    await messaging.subscribeToTopic(topic);
-  } catch (e) {
-    print(' Error subscribing to coaching topics: $e');
+  static Future<void> subscribeToCoaching(
+      String coachingCode, bool isTeacher) async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      String topic =
+          isTeacher ? '${coachingCode}_teacher' : '${coachingCode}_students';
+      await messaging.subscribeToTopic(topic);
+    } catch (e) {
+      print(' Error subscribing to coaching topics: $e');
+    }
+  }
+
+  static Future<void> unSubscribeToCoaching(
+      String coachingCode, bool isTeacher) async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      String topic =
+          isTeacher ? '${coachingCode}_teacher' : '${coachingCode}_students';
+      await messaging.unsubscribeFromTopic(topic);
+    } catch (e) {
+      print(' Error subscribing to coaching topics: $e');
+    }
   }
 }
-
-static Future<void> unSubscribeToCoaching(String coachingCode, bool isTeacher) async {
-  try {
-    final messaging = FirebaseMessaging.instance;
-    String topic =
-        isTeacher ? '${coachingCode}_teacher' : '${coachingCode}_students';
-    await messaging.unsubscribeFromTopic(topic);
-  } catch (e) {
-    print(' Error subscribing to coaching topics: $e');
-  }
-}
-}
-
-

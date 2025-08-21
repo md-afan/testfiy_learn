@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:testify_learn_application/widgets/global_shimmer_screen.dart';
 import '../../providers/students/studnet_dashboard_provider.dart';
 import '../../utils/helpers.dart';
 import '../../theme/color_pelette.dart';
@@ -11,6 +12,8 @@ import './widgets/test_list.dart';
 import '../../constants/app_routes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:testify_learn_application/theme/shimmer_theme.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -79,31 +82,36 @@ class _StudentDashboardState extends State<StudentDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
-                _buildWelcomeSection(context, provider),
+                provider.isLoading
+                    ? _buildWelcomeSectionShimmer(context)
+                    : _buildWelcomeSection(context, provider),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    StatBox(
-                      count: provider.testsTaken.toString(),
-                      label: "Tests Taken",
-                      color: AppColors.primaryComman,
-                      icon: Icons.assignment,
-                    ),
-                    StatBox(
-                      count: provider.testsWon.toString(),
-                      label: "Tests Won",
-                      color: AppColors.tertiaryComman,
-                      icon: Icons.emoji_events,
-                    ),
-                    StatBox(
-                      count: provider.rank.toString(),
-                      label: "Rank",
-                      color: AppColors.secondaryComman,
-                      icon: Icons.leaderboard,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                provider.isLoading
+                    ? StatBoxShimmer(
+                        count: 3,
+                      )
+                    : Row(
+                        children: [
+                          StatBox(
+                            count: provider.testsTaken.toString(),
+                            label: "Tests Taken",
+                            color: AppColors.primaryComman,
+                            icon: Icons.assignment,
+                          ),
+                          StatBox(
+                            count: provider.testsWon.toString(),
+                            label: "Tests Won",
+                            color: AppColors.tertiaryComman,
+                            icon: Icons.emoji_events,
+                          ),
+                          StatBox(
+                            count: provider.rank.toString(),
+                            label: "Rank",
+                            color: AppColors.secondaryComman,
+                            icon: Icons.leaderboard,
+                          ),
+                        ],
+                      )
               ],
             ),
           ),
@@ -112,29 +120,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
           child: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TabButton(
-                  label: 'New tests',
-                  index: 0,
-                  currentIndex: provider.tabIndex,
-                  onTap: provider.setTab,
-                ),
-                TabButton(
-                  label: 'Enroll tests',
-                  index: 1,
-                  currentIndex: provider.tabIndex,
-                  onTap: provider.setTab,
-                ),
-                TabButton(
-                  label: 'Completed tests',
-                  index: 2,
-                  currentIndex: provider.tabIndex,
-                  onTap: provider.setTab,
-                ),
-              ],
-            ),
+            child: provider.isLoading
+                ? TabButtonShimmer(count: 3)
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TabButton(
+                        label: 'New tests',
+                        index: 0,
+                        currentIndex: provider.tabIndex,
+                        onTap: provider.setTab,
+                      ),
+                      TabButton(
+                        label: 'Enroll tests',
+                        index: 1,
+                        currentIndex: provider.tabIndex,
+                        onTap: provider.setTab,
+                      ),
+                      TabButton(
+                        label: 'Completed tests',
+                        index: 2,
+                        currentIndex: provider.tabIndex,
+                        onTap: provider.setTab,
+                      ),
+                    ],
+                  ),
           ),
         ),
         SliverToBoxAdapter(
@@ -143,20 +153,24 @@ class _StudentDashboardState extends State<StudentDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  provider.tabIndex == 0
-                      ? 'New Tests'
-                      : provider.tabIndex == 1
-                          ? 'Enrolled Tests'
-                          : 'Completed Tests',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                GlobalShimmerScreen(
+                  isLoading: provider.isLoading,
+                  child: Text(
+                    provider.tabIndex == 0
+                        ? 'New Tests'
+                        : provider.tabIndex == 1
+                            ? 'Enrolled Tests'
+                            : 'Completed Tests',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (provider.coachingCode != null)
                   TestListScreen(
                     uid: provider.uid,
+                    isRefreshing: provider.isLoading,
                     coachingCode: provider.coachingCode!,
                     filter: provider.tabIndex == 0
                         ? 'upcoming'
@@ -244,4 +258,83 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
     );
   }
+}
+
+// shimmer widget for _buildWelcomeSection
+Widget _buildWelcomeSectionShimmer(BuildContext context) {
+  final shimmerTheme = Theme.of(context).extension<ShimmerTheme>()!;
+  final theme = Theme.of(context).colorScheme;
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Welcome Text shimmer
+        Shimmer.fromColors(
+          baseColor: shimmerTheme.baseColor,
+          highlightColor: shimmerTheme.highlightColor,
+          child: Container(
+            height: 24,
+            width: double.infinity,
+            decoration: BoxDecoration(
+                color: theme.surface, borderRadius: BorderRadius.circular(4)),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Coaching row shimmer
+        Row(
+          children: [
+            // Image shimmer
+            Shimmer.fromColors(
+              baseColor: shimmerTheme.baseColor,
+              highlightColor: shimmerTheme.highlightColor,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: theme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Text shimmer
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Shimmer.fromColors(
+                    baseColor: shimmerTheme.baseColor,
+                    highlightColor: shimmerTheme.highlightColor,
+                    child: Container(
+                      height: 16,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                          color: theme.surface,
+                          borderRadius: BorderRadius.circular(4)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Shimmer.fromColors(
+                    baseColor: shimmerTheme.baseColor,
+                    highlightColor: shimmerTheme.highlightColor,
+                    child: Container(
+                      height: 14,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                          color: theme.surface,
+                          borderRadius: BorderRadius.circular(4)),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ],
+    ),
+  );
 }

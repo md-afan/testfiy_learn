@@ -2,8 +2,7 @@ import 'dart:async'; // Added missing import
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import '../../utils/helpers.dart';
-import '../../widgets/profile_header.dart';
+
 import '../../widgets/sliver_profile_appbar.dart';
 
 class StudentDetailsScreen extends StatefulWidget {

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../providers/comman providers/notification_provider.dart';
 import '../../widgets/global_shimmer_screen.dart';
+import '../../widgets/text_card.dart';
 
 class NotificationScreen extends StatelessWidget {
   final String role; // 'students' or 'teachers'
@@ -34,7 +35,8 @@ class NotificationScreen extends StatelessWidget {
                           child: Text(
                             type == 'All'
                                 ? 'All Notifications'
-                                : provider.capitalize(type.replaceAll('_', ' ')),
+                                : provider
+                                    .capitalize(type.replaceAll('_', ' ')),
                           ),
                         ))
                     .toList(),
@@ -44,26 +46,14 @@ class NotificationScreen extends StatelessWidget {
           body: StreamBuilder<QuerySnapshot>(
             stream: provider.realTimeNotifications,
             builder: (context, snapshot) {
-              bool isLoading = !snapshot.hasData && provider.olderNotifications.isEmpty;
+              bool isLoading =
+                  !snapshot.hasData && provider.olderNotifications.isEmpty;
 
               // ✅ Show shimmer while loading
               if (isLoading) {
-                return GlobalShimmerScreen(
-                  isLoading: true,
-                  itemCount: 8,
-                  height: 70,
-                  child: ListView.builder(
-                    itemCount: 8,
-                    padding: const EdgeInsets.all(8),
-                    itemBuilder: (_, __) => Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      height: 70,
-                    ),
-                  ),
+                return TestCardShimmer(
+                  count: 10,
+                  hiddenBottomLable: true,
                 );
               }
 
@@ -109,26 +99,47 @@ class NotificationScreen extends StatelessWidget {
                         const SnackBar(content: Text("Notification deleted")),
                       );
                     },
-                    child: ListTile(
-                      leading: Icon(
-                        provider.getIconForType(data['type'] ?? ''),
-                        color: (data['isRead'] ?? false)
-                            ? Colors.grey
-                            : Colors.deepPurple,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: FutureBuilder<String?>(
+                        future: provider.getSenderImage(
+                            data['senderId'], data['senderType']),
+                        builder: (context, snapshot) {
+                          final imageUrl = snapshot.data;
+                          print(imageUrl);
+
+                          return TestCard(
+                            imagesUrl:
+                                imageUrl, // null safe handled by TestCard (fallback to icon)
+                            title: data['title'],
+                            subTitle: data['body'],
+                            rightText: timeAgo,
+                            onTap: () => provider.markAsRead(doc),
+                          );
+                        },
                       ),
-                      title: Text(
-                        data['title'] ?? '',
-                        style: TextStyle(
-                          fontWeight: (data['isRead'] ?? false)
-                              ? FontWeight.normal
-                              : FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(data['body'] ?? ''),
-                      trailing:
-                          Text(timeAgo, style: const TextStyle(fontSize: 12)),
-                      onTap: () => provider.markAsRead(doc),
                     ),
+
+                    // child:TestCard() ListTile(
+                    //   leading: Icon(
+                    //     provider.getIconForType(data['type'] ?? ''),
+                    //     color: (data['isRead'] ?? false)
+                    //         ? Colors.grey
+                    //         : Colors.deepPurple,
+                    //   ),
+                    //   title: Text(
+                    //     data['title'] ?? '',
+                    //     style: TextStyle(
+                    //       fontWeight: (data['isRead'] ?? false)
+                    //           ? FontWeight.normal
+                    //           : FontWeight.bold,
+                    //     ),
+                    //   ),
+                    //   subtitle: Text(data['body'] ?? ''),
+                    //   trailing:
+                    //       Text(timeAgo, style: const TextStyle(fontSize: 12)),
+                    //   onTap: () => provider.markAsRead(doc),
+                    // ),
                   );
                 },
               );

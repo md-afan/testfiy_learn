@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import './global_shimmer_screen.dart';
 
 class TestCard extends StatefulWidget {
   final String title;
@@ -8,6 +9,7 @@ class TestCard extends StatefulWidget {
   final IconData? icon;
   final String? imagesUrl;
   final VoidCallback onTap;
+  final String? rightText;
 
   const TestCard({
     super.key,
@@ -17,6 +19,7 @@ class TestCard extends StatefulWidget {
     this.icon,
     this.imagesUrl,
     required this.onTap,
+    this.rightText,
   });
 
   @override
@@ -85,7 +88,7 @@ class _TestCardState extends State<TestCard> {
                           backgroundColor: iconBgColor,
                           radius: 22,
                           child: Icon(
-                            widget.icon ?? Icons.description,
+                            widget.icon ?? Icons.person,
                             color: Colors.white,
                             size: 20,
                           ),
@@ -125,20 +128,94 @@ class _TestCardState extends State<TestCard> {
                 ),
               ),
 
-              // Arrow Icon
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _isHovered ? 1.0 : 0.5,
-                child: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.grey,
-                ),
-              ),
+              widget.rightText == null
+                  ?
+                  // Arrow Icon
+                  AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: _isHovered ? 1.0 : 0.5,
+                      child: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    )
+                  : Text(widget.rightText.toString())
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class TestCardShimmer extends StatelessWidget {
+  final int count; // number of shimmer cards
+  final bool hiddenBottomLable;
+
+  const TestCardShimmer(
+      {super.key, this.count = 3, this.hiddenBottomLable = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).colorScheme;
+
+    return Column(
+      children: List.generate(count, (index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          child: GlobalShimmerScreen(
+            isLoading: true,
+            child: Row(
+              children: [
+                // Avatar Placeholder
+                Container(
+                  height: 44,
+                  width: 44,
+                  decoration: BoxDecoration(
+                    color: theme.surface,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Text placeholders
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 14,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: theme.surface),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 12,
+                        width: 150,
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: theme.surface),
+                      ),
+                      const SizedBox(height: 4),
+                      if (hiddenBottomLable != true)
+                        Container(
+                          height: 11,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              color: theme.surface),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
     );
   }
 }

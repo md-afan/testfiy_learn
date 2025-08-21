@@ -42,7 +42,7 @@ class UiHelpers {
                   onPressed: onTap,
                   child: Text(
                     navigateTitle != null ? navigateTitle : "",
-                    style: Theme.of(context).textTheme.labelLarge,
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ],

@@ -11,6 +11,7 @@ class SliverProfileAppBar extends StatelessWidget {
   final VoidCallback? onCoverImageTap;
   final VoidCallback? onProfileImageTap;
   final bool isUploadingImage;
+  final bool isUploadingCoverImages;
   final bool showBackButton;
   final List<Widget>? actions;
 
@@ -24,6 +25,7 @@ class SliverProfileAppBar extends StatelessWidget {
     this.onCoverImageTap,
     this.onProfileImageTap,
     this.isUploadingImage = false,
+    this.isUploadingCoverImages = false,
     this.expandedHeight = 230,
     this.showBackButton = false,
     this.actions,
@@ -61,106 +63,15 @@ class SliverProfileAppBar extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Cover Image
-            coverImageUrl != null && coverImageUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: coverImageUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) =>
-                        Container(color: colorScheme.primaryContainer),
-                    errorWidget: (_, __, ___) =>
-                        Container(color: colorScheme.primaryContainer),
-                  )
-                : Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colorScheme.primaryContainer,
-                          colorScheme.primaryContainer.withOpacity(0.7),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-
-            // Dark overlay
-            Container(color: Colors.black.withOpacity(0.4)),
-
-            // Cover Image Tap Button (Top Right)
-            if (onCoverImageTap != null)
-              Positioned(
-                bottom: 5,
-                right: 5,
-                child: GestureDetector(
-                  onTap: onCoverImageTap,
-                  child: const CircleAvatar(
-                    backgroundColor: Colors.black54,
-                    child: Icon(Icons.photo_camera, color: Colors.white),
-                  ),
-                ),
-              ),
-
-            // Profile Info
+            _buildCoverImage(colorScheme),
+            // Profile section
             Positioned(
               bottom: 16,
               left: 16,
               right: 16,
               child: Row(
                 children: [
-                  // Profile Image
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: colorScheme.surface,
-                        child: ClipOval(
-                          child: profileImageUrl != null &&
-                                  profileImageUrl!.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: profileImageUrl!,
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: colorScheme.surfaceVariant,
-                                  ),
-                                  errorWidget: (_, __, ___) => Image.asset(
-                                      'assets/images/default_user.png',
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover),
-                                )
-                              : Image.asset('assets/images/default_user.png',
-                                  width: 80, height: 80, fit: BoxFit.cover),
-                        ),
-                      ),
-                      if (onProfileImageTap != null)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: onProfileImageTap,
-                            child: const CircleAvatar(
-                              radius: 14,
-                              backgroundColor: Colors.black54,
-                              child: Icon(Icons.camera_alt,
-                                  size: 14, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      if (isUploadingImage)
-                        const Positioned.fill(
-                          child: ColoredBox(
-                            color: Colors.black26,
-                            child: Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
-                          ),
-                        ),
-                    ],
-                  ),
+                  _buildProfileImage(colorScheme),
                   const SizedBox(width: 16),
                   // Name & Email
                   Expanded(
@@ -190,6 +101,123 @@ class SliverProfileAppBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Cover Image with overlay + upload state
+  Widget _buildCoverImage(ColorScheme colorScheme) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        coverImageUrl != null && coverImageUrl!.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: coverImageUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    Container(color: colorScheme.primaryContainer),
+                errorWidget: (_, __, ___) =>
+                    Container(color: colorScheme.primaryContainer),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primaryContainer,
+                      colorScheme.primaryContainer.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+
+        // Dark overlay
+        Container(color: Colors.black.withOpacity(0.4)),
+
+        // Uploading cover overlay
+        if (isUploadingCoverImages)
+          Container(
+            color: Colors.black26,
+            child: const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
+            ),
+          ),
+
+        // Tap button for cover image
+        if (onCoverImageTap != null)
+          Positioned(
+            bottom: 5,
+            right: 5,
+            child: GestureDetector(
+              onTap: onCoverImageTap,
+              child: const CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.photo_camera, color: Colors.white),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Profile Image with overlay + upload state
+  Widget _buildProfileImage(ColorScheme colorScheme) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: colorScheme.surface,
+          child: ClipOval(
+            child: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: profileImageUrl!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        Container(color: colorScheme.surfaceVariant),
+                    errorWidget: (_, __, ___) => Image.asset(
+                      'assets/images/default_user.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Image.asset(
+                    'assets/images/default_user.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
+          ),
+        ),
+
+        // Camera icon
+        if (onProfileImageTap != null)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: onProfileImageTap,
+              child: const CircleAvatar(
+                radius: 14,
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.camera_alt, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+
+        // Uploading overlay
+        if (isUploadingImage)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black26,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -8,12 +8,14 @@ import '../../../providers/students/studnets_tests_list_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TestListScreen extends StatefulWidget {
+  final bool isRefreshing;
   final String coachingCode;
   final String uid;
   final String filter;
 
   const TestListScreen({
     super.key,
+    this.isRefreshing = false,
     required this.coachingCode,
     required this.uid,
     required this.filter,
@@ -29,9 +31,10 @@ class _TestListScreenState extends State<TestListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final provider =
+        Provider.of<StudentTestListProvider>(context, listen: false);
+
     if (!_initialized) {
-      final provider =
-          Provider.of<StudentTestListProvider>(context, listen: false);
       provider.setParams(
         coachingCode: widget.coachingCode,
         uid: widget.uid,
@@ -40,6 +43,23 @@ class _TestListScreenState extends State<TestListScreen> {
       provider.loadTests();
       _initialized = true;
     }
+
+    // 🔄 If isRefreshing is true, trigger refresh
+    if (widget.isRefreshing) {
+      provider.refreshTests();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant TestListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 🔄 Detect when isRefreshing changes from false → true
+    if (widget.isRefreshing && !oldWidget.isRefreshing) {
+      final provider =
+          Provider.of<StudentTestListProvider>(context, listen: false);
+      provider.refreshTests();
+    }
   }
 
   @override
@@ -47,7 +67,7 @@ class _TestListScreenState extends State<TestListScreen> {
     return Consumer<StudentTestListProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading && provider.tests.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return TestCardShimmer(count: 6);
         }
 
         if (provider.errorMessage.isNotEmpty) {
@@ -58,55 +78,53 @@ class _TestListScreenState extends State<TestListScreen> {
           return Center(child: Text("No ${widget.filter} tests found."));
         }
 
-        return RefreshIndicator(
-          onRefresh: provider.refreshTests,
-          child: ListView.separated(
-            padding: const EdgeInsets.all(5),
-            shrinkWrap: true,
-            itemCount: provider.tests.length + (provider.hasMore ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              if (index == provider.tests.length) {
-                if (!provider.isFetchingMore) {
-                  provider.fetchMoreTests();
-                }
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+        return ListView.separated(
+          padding: const EdgeInsets.all(5),
+          shrinkWrap: true,
+          itemCount: provider.tests.length + (provider.hasMore ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == provider.tests.length) {
+              if (!provider.isFetchingMore) {
+                provider.fetchMoreTests();
               }
-
-              final doc = provider.tests[index];
-              final data = doc.data();
-
-              String createdAtStr = '';
-              final createdAt = data['createdAt'];
-              if (createdAt is Timestamp) {
-                createdAtStr =
-                    DateFormat.yMMMd().add_Hm().format(createdAt.toDate());
-              }
-
-              String testDateStr = "Unknown";
-              final testDate = data['testDateTime'];
-              if (testDate is Timestamp) {
-                testDateStr = DateFormat("dd MMM yyyy, hh:mm a")
-                    .format(testDate.toDate());
-              }
-
-              return TestCard(
-                title: data['title'] ?? 'Untitled',
-                subTitle: "Test Date: $testDateStr",
-                bottomTitle: 'Created on $createdAtStr',
-                icon: Icons.description,
-                onTap: () {
-                  context.push(
-                      '${AppRoutes.testDetaistTostudents}/${doc.id}/${widget.uid}');
-                },
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: CircularProgressIndicator(),
+                ),
               );
-            },
-          ),
+            }
+
+            final doc = provider.tests[index];
+            final data = doc.data();
+
+            String createdAtStr = '';
+            final createdAt = data['createdAt'];
+            if (createdAt is Timestamp) {
+              createdAtStr =
+                  DateFormat.yMMMd().add_Hm().format(createdAt.toDate());
+            }
+
+            String testDateStr = "Unknown";
+            final testDate = data['testDateTime'];
+            if (testDate is Timestamp) {
+              testDateStr =
+                  DateFormat("dd MMM yyyy, hh:mm a").format(testDate.toDate());
+            }
+
+            return TestCard(
+              title: data['title'] ?? 'Untitled',
+              subTitle: "Test Date: $testDateStr",
+              bottomTitle: 'Created on $createdAtStr',
+              icon: Icons.description,
+              onTap: () {
+                context.push(
+                  '${AppRoutes.testDetaistTostudents}/${doc.id}/${widget.uid}',
+                );
+              },
+            );
+          },
         );
       },
     );

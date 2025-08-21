@@ -266,9 +266,18 @@ class _StudentsAttandanceScreenState extends State<StudentsAttandanceScreen> {
       child: Row(
         children: const [
           SizedBox(width: 8),
-          Expanded(flex: 1, child: Text("S.No", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(flex: 3, child: Text("Name", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(flex: 2, child: Text("Status", style: TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(
+              flex: 1,
+              child:
+                  Text("S.No", style: TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(
+              flex: 3,
+              child:
+                  Text("Name", style: TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(
+              flex: 2,
+              child: Text("Status",
+                  style: TextStyle(fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -338,8 +347,10 @@ class _StudentsAttandanceScreenState extends State<StudentsAttandanceScreen> {
                             )
                           : null,
                     ),
-                    title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(s.email, style: TextStyle(color: Colors.grey)),
+                    title: Text(s.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle:
+                        Text(s.email, style: TextStyle(color: Colors.grey)),
                     trailing: Switch(
                       value: s.isPresent,
                       onChanged: (val) {

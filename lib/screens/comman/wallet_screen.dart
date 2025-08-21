@@ -63,7 +63,7 @@ class WalletScreen extends StatelessWidget {
 
                 // Transactions shimmer list
                 provider.isLoadingTransactions
-                    ? _buildTransactionShimmerList()
+                    ? TransecctionTileShimmer(count: 6)
                     : _buildTransactionList(provider),
 
                 if (provider.isLoadingMore)
@@ -208,41 +208,6 @@ class WalletScreen extends StatelessWidget {
           );
         },
         childCount: provider.filteredTransactions.length,
-      ),
-    );
-  }
-
-  Widget _buildTransactionShimmerList() {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return GlobalShimmerScreen(
-            isLoading: true,
-            child: ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                color: Colors.white,
-              ),
-              title: Container(
-                width: double.infinity,
-                height: 14,
-                color: Colors.white,
-              ),
-              subtitle: Container(
-                width: 100,
-                height: 12,
-                color: Colors.white,
-              ),
-              trailing: Container(
-                width: 50,
-                height: 14,
-                color: Colors.white,
-              ),
-            ),
-          );
-        },
-        childCount: 6,
       ),
     );
   }

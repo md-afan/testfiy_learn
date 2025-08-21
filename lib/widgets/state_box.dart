@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './global_shimmer_screen.dart';
 
 class StatBox extends StatelessWidget {
   final String count;
@@ -45,6 +46,42 @@ class StatBox extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class StatBoxShimmer extends StatelessWidget {
+  final int count; // Number of shimmer boxes to show
+  const StatBoxShimmer({super.key, this.count = 3});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).colorScheme;
+
+    return Row(
+      children: List.generate(count, (index) {
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            // padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: theme.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: GlobalShimmerScreen(
+              isLoading: true,
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.surface, // keep your theme color
+                  borderRadius: BorderRadius.circular(16), // rounded corners
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

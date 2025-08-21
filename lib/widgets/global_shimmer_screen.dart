@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:testify_learn_application/theme/shimmer_theme.dart';
 
 class GlobalShimmerScreen extends StatelessWidget {
   final bool isLoading;
@@ -7,8 +8,6 @@ class GlobalShimmerScreen extends StatelessWidget {
   final int? itemCount; // Optional: how many shimmer items to generate
   final double? height; // Optional: height of each shimmer item
   final EdgeInsetsGeometry padding;
-  final Color baseColor;
-  final Color highlightColor;
 
   const GlobalShimmerScreen({
     super.key,
@@ -17,12 +16,12 @@ class GlobalShimmerScreen extends StatelessWidget {
     this.itemCount,
     this.height,
     this.padding = const EdgeInsets.all(16),
-    this.baseColor = const Color(0xFFE0E0E0), // light grey
-    this.highlightColor = const Color(0xFFF5F5F5), // lighter grey
+    // lighter grey
   });
 
   @override
   Widget build(BuildContext context) {
+    final shimmerTheme = Theme.of(context).extension<ShimmerTheme>()!;
     if (!isLoading) {
       return child ?? const SizedBox.shrink();
     }
@@ -30,16 +29,16 @@ class GlobalShimmerScreen extends StatelessWidget {
     // If child is provided, shimmer that widget
     if (child != null) {
       return Shimmer.fromColors(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
+        baseColor: shimmerTheme.baseColor,
+        highlightColor: shimmerTheme.highlightColor,
         child: IgnorePointer(child: child),
       );
     }
 
     // If no child but itemCount & height provided, auto-generate shimmer placeholders
     return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+      baseColor: shimmerTheme.baseColor,
+      highlightColor: shimmerTheme.highlightColor,
       child: IgnorePointer(
         child: ListView.builder(
           padding: padding,

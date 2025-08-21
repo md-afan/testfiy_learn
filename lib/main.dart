@@ -12,6 +12,12 @@ import 'providers/tests_provider.dart';
 import 'providers/alll_activity_provider.dart';
 import 'providers/comman providers/theme_provider.dart';
 import 'providers/test_list_provider.dart';
+// auth provider
+import 'providers/auth/login_provider.dart';
+import 'providers/auth/signup_students_provider.dart';
+import 'providers/auth/organization_creation_provider.dart';
+import 'providers/auth/teacher_signup_provider.dart';
+
 //student providers
 import 'providers/students/profile_provider.dart';
 import 'providers/students/rank_proivder.dart';
@@ -21,7 +27,7 @@ import 'providers/comman providers/enrolled_stundets_provider.dart';
 
 // teacher providers
 import 'providers/teachers/teacher_profile_provider.dart';
-import 'providers/teachers/students_provider.dart';
+// import 'providers/teachers/students_provider.dart';
 import 'providers/teachers/teacher_dashboard_proivder.dart';
 
 // comman providers
@@ -56,7 +62,6 @@ void main() async {
     await Firebase.initializeApp();
   }
 
-
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('YOUR_RECAPTCHA_KEY'), // For web
     androidProvider: AndroidProvider
@@ -79,6 +84,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // auth providers
+        ChangeNotifierProvider(create: (_) => LoginProvider()),
+        ChangeNotifierProvider(create: (_) => SignupStudentsProvider()),
+        ChangeNotifierProvider(create: (_) => OrganizationSignupProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherSignupProvider()),
+
         //comman providers
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
@@ -86,7 +97,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TestScreenProvider()),
         ChangeNotifierProvider(create: (_) => TestDetailsProvider()),
         ChangeNotifierProvider(create: (_) => CashfreePaymentProvider()),
-        ChangeNotifierProvider(create: (_) => CashfreeWithdrawalProvider()),
+        // ChangeNotifierProvider(create: (_) => CashfreePayoutProvider()),
 
         // teacher providers
         ChangeNotifierProvider(create: (_) => TestListProvider()),

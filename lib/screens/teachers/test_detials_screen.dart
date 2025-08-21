@@ -239,7 +239,7 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
                   .update({'isPublished': val});
               await FirebaseNotification.subscribeToQuizTopics(
                   widget.testId, true);
-              setState(() {});
+              // setState(() {});
             }
           },
         )
@@ -395,8 +395,7 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
             if (quizData['status'] == 'completed') ...[
               GestureDetector(
                 onTap: () {
-                  context
-                      .push("${AppRoutes.testLeaderborad}/${widget.testId}");
+                  context.push("${AppRoutes.testLeaderborad}/${widget.testId}");
                 },
                 child: _infoBadge(Icons.leaderboard, "View Leaderborad"),
               )

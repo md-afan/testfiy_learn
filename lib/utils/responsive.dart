@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ResponsiveLayout extends StatelessWidget {
-  final Widget mobile;
-  final Widget tablet;
-  final Widget desktop;
+  final Widget? mobile;
+  final Widget? tablet;
+  final Widget? desktop;
   final Widget? largeDesttop;
 
   const ResponsiveLayout({
-    required this.mobile,
-    required this.tablet,
-    required this.desktop,
-    required this.largeDesttop,
+    this.mobile,
+    this.tablet,
+    this.desktop,
+    this.largeDesttop,
     super.key,
   });
 
@@ -23,11 +23,11 @@ class ResponsiveLayout extends StatelessWidget {
         if (width >= 1040) {
           return largeDesttop ?? Text("Hello $width");
         } else if (width >= 500) {
-          return tablet;
+          return tablet!;
         } else if (width >= 800) {
-          return desktop;
+          return desktop!;
         } else {
-          return mobile;
+          return mobile!;
         }
       },
     );
